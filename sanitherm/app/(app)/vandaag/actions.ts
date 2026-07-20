@@ -7,7 +7,13 @@ import {
   vandaagInBrussel,
   wandtijdNaarInstant,
 } from "@/lib/uren";
-import type { Tijdsregistratie } from "@/lib/types";
+import type { Tijdsregistratie, DagSoort } from "@/lib/types";
+
+const SOORTEN: readonly DagSoort[] = ["gewoon", "weekend", "bouwverlof"];
+function leesSoort(formData: FormData): DagSoort {
+  const s = String(formData.get("soort") ?? "gewoon");
+  return SOORTEN.includes(s as DagSoort) ? (s as DagSoort) : "gewoon";
+}
 
 // Haal (of maak) de registratie van vandaag voor de ingelogde arbeider.
 async function registratieVanVandaag() {
@@ -29,7 +35,8 @@ async function registratieVanVandaag() {
   return { supabase, userId: user.id, datum, bestaand: bestaand as Tijdsregistratie | null };
 }
 
-export async function inchecken() {
+export async function inchecken(formData: FormData) {
+  const soort = leesSoort(formData);
   const { supabase, userId, datum, bestaand } = await registratieVanVandaag();
   const nu = new Date().toISOString();
 
@@ -37,7 +44,7 @@ export async function inchecken() {
     if (bestaand.checkin) return; // al ingecheckt
     await supabase
       .from("tijdsregistraties")
-      .update({ checkin: nu })
+      .update({ checkin: nu, soort })
       .eq("id", bestaand.id);
   } else {
     // pauze uit de instellingen halen (fallback 30)
@@ -52,9 +59,24 @@ export async function inchecken() {
       checkin: nu,
       pauze_minuten: inst?.standaard_pauze_minuten ?? 30,
       status: "open",
+      soort,
     });
   }
   revalidatePath("/vandaag");
+  revalidatePath("/week");
+}
+
+// Soort dag aanpassen (bv. verkeerd gekozen bij het inchecken).
+export async function zetSoort(formData: FormData) {
+  const soort = leesSoort(formData);
+  const { supabase, bestaand } = await registratieVanVandaag();
+  if (!bestaand) return;
+  await supabase
+    .from("tijdsregistraties")
+    .update({ soort })
+    .eq("id", bestaand.id);
+  revalidatePath("/vandaag");
+  revalidatePath("/week");
 }
 
 export async function uitchecken() {

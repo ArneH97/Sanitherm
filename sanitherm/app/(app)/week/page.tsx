@@ -66,9 +66,17 @@ export default async function WeekPagina({
     dagen.push({ datum: ds, reg: regs.find((r) => r.datum === ds) ?? null });
   }
 
-  const totaal = regs.reduce((s, r) => s + (r.gewerkte_uren ?? 0), 0);
+  // Weekend- en bouwverlof-uren tellen volledig als overuren; gewone uren pas
+  // boven de weekstandaard.
+  const gewoonUren = regs
+    .filter((r) => (r.soort ?? "gewoon") === "gewoon")
+    .reduce((s, r) => s + (r.gewerkte_uren ?? 0), 0);
+  const extraUren = regs
+    .filter((r) => (r.soort ?? "gewoon") !== "gewoon")
+    .reduce((s, r) => s + (r.gewerkte_uren ?? 0), 0);
+  const totaal = gewoonUren + extraUren;
   const norm = werknemer!.standaard_uren_per_week;
-  const overuren = Math.max(0, totaal - norm);
+  const overuren = extraUren + Math.max(0, gewoonUren - norm);
 
   return (
     <div className="space-y-6">
@@ -112,6 +120,11 @@ export default async function WeekPagina({
               <tr key={d.datum}>
                 <td className="px-4 py-2.5 text-slate-700">
                   {toonDatum(d.datum)}
+                  {d.reg && (d.reg.soort ?? "gewoon") !== "gewoon" && (
+                    <span className="ml-1 rounded bg-merk-licht px-1.5 py-0.5 text-[10px] font-medium text-merk">
+                      {d.reg.soort}
+                    </span>
+                  )}
                   {d.reg?.handmatig_aangepast && (
                     <span className="ml-1 text-amber-500" title="Aangepast">
                       ✎
@@ -141,7 +154,7 @@ export default async function WeekPagina({
             </tr>
             <tr>
               <td colSpan={3} className="px-4 py-2.5 text-slate-600">
-                Overuren (boven {toonUren(norm)})
+                Overuren (weekend/bouwverlof + boven {toonUren(norm)})
               </td>
               <td className="px-4 py-2.5 text-right font-bold text-merk">
                 {toonUren(overuren)}

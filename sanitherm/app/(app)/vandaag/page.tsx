@@ -2,7 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { huidigeWerknemer } from "@/lib/werknemer";
 import { vandaagInBrussel, toonTijd, toonDatum, toonUren } from "@/lib/uren";
 import type { Tijdsregistratie } from "@/lib/types";
-import { inchecken, uitchecken, corrigeer } from "./actions";
+import { DAGSOORT_OPTIES, DAGSOORT_LABELS } from "@/lib/types";
+import { inchecken, uitchecken, corrigeer, zetSoort } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -50,7 +51,23 @@ export default async function VandaagPagina() {
         </div>
 
         {!ingecheckt && (
-          <form action={inchecken}>
+          <form action={inchecken} className="space-y-3">
+            <label className="block">
+              <span className="mb-1 block text-sm font-medium text-slate-700">
+                Soort dag
+              </span>
+              <select
+                name="soort"
+                defaultValue="gewoon"
+                className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-slate-900 outline-none focus:border-merk focus:ring-2 focus:ring-merk/30"
+              >
+                {DAGSOORT_OPTIES.map((o) => (
+                  <option key={o.key} value={o.key}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </label>
             <button className="w-full rounded-xl bg-merk py-4 text-lg font-semibold text-white transition hover:bg-merk-donker">
               Inchecken
             </button>
@@ -58,11 +75,32 @@ export default async function VandaagPagina() {
         )}
 
         {ingecheckt && !uitgecheckt && (
-          <form action={uitchecken}>
-            <button className="w-full rounded-xl bg-slate-900 py-4 text-lg font-semibold text-white transition hover:bg-slate-700">
-              Uitchecken
-            </button>
-          </form>
+          <div className="space-y-3">
+            <form action={uitchecken}>
+              <button className="w-full rounded-xl bg-slate-900 py-4 text-lg font-semibold text-white transition hover:bg-slate-700">
+                Uitchecken
+              </button>
+            </form>
+            <form action={zetSoort} className="flex items-center gap-2">
+              <span className="whitespace-nowrap text-sm text-slate-500">
+                Soort:
+              </span>
+              <select
+                name="soort"
+                defaultValue={reg?.soort ?? "gewoon"}
+                className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-merk focus:ring-2 focus:ring-merk/30"
+              >
+                {DAGSOORT_OPTIES.map((o) => (
+                  <option key={o.key} value={o.key}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+              <button className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
+                Aanpassen
+              </button>
+            </form>
+          </div>
         )}
 
         {uitgecheckt && (
@@ -72,7 +110,8 @@ export default async function VandaagPagina() {
               {toonUren(reg?.gewerkte_uren ?? null)}
             </p>
             <p className="mt-1 text-xs text-slate-500">
-              (pauze {reg?.pauze_minuten} min afgetrokken)
+              {DAGSOORT_LABELS[reg?.soort ?? "gewoon"]} · pauze{" "}
+              {reg?.pauze_minuten} min
             </p>
           </div>
         )}

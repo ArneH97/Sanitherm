@@ -4,6 +4,23 @@ export type Rol = "arbeider" | "zaakvoerder";
 
 export type RegistratieStatus = "open" | "bevestigd" | "goedgekeurd";
 
+// Soort dag bij het inchecken. Weekend- en bouwverlof-uren tellen volledig
+// als overuren; gewone uren pas boven de weekstandaard.
+export type DagSoort = "gewoon" | "weekend" | "bouwverlof";
+
+export const DAGSOORT_LABELS: Record<DagSoort, string> = {
+  gewoon: "Gewone werkdag",
+  weekend: "Weekendwerk (overuren)",
+  bouwverlof: "Bouwverlof (overuren)",
+};
+
+export const DAGSOORT_OPTIES: { key: DagSoort; label: string; kort: string }[] =
+  [
+    { key: "gewoon", label: "Gewone werkdag", kort: "gewoon" },
+    { key: "weekend", label: "Weekendwerk (overuren)", kort: "weekend" },
+    { key: "bouwverlof", label: "Bouwverlof (overuren)", kort: "bouwverlof" },
+  ];
+
 export interface Werknemer {
   id: string;
   naam: string;
@@ -51,6 +68,7 @@ export interface Tijdsregistratie {
   status: RegistratieStatus;
   handmatig_aangepast: boolean;
   opmerking: string | null;
+  soort: DagSoort;
 }
 
 // Verlofsoorten. 'overuren' = recuperatie van opgebouwde overuren (inhaalrust).
