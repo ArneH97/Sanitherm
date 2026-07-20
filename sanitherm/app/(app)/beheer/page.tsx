@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { attestSignedUrl } from "@/lib/attest";
-import { vandaagInBrussel, toonTijd, toonDatum } from "@/lib/uren";
+import { vandaagInBrussel, toonTijd, toonDatum, toonUren } from "@/lib/uren";
 import type { Tijdsregistratie, Werknemer } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -94,9 +94,7 @@ export default async function BeheerOverzicht() {
                     {toonTijd(r?.checkout ?? null)}
                   </td>
                   <td className="px-4 py-2.5 text-right font-medium text-slate-900">
-                    {r?.gewerkte_uren != null
-                      ? r.gewerkte_uren.toFixed(2)
-                      : "—"}
+                    {toonUren(r?.gewerkte_uren ?? null)}
                   </td>
                 </tr>
               );

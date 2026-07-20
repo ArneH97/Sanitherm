@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { toonDatum } from "@/lib/uren";
+import { toonDatum, toonUren } from "@/lib/uren";
 import { VERLOF_LABELS, type Verlofaanvraag } from "@/lib/types";
 import { verlofBeslissen, weekBeslissen } from "./actions";
 
@@ -137,11 +137,11 @@ export default async function GoedkeuringenPagina() {
                     {w.werknemer?.naam ?? "Onbekend"}
                   </p>
                   <p className="text-sm text-slate-500">
-                    Week {w.weeknummer} · {w.jaar} · {Number(w.totaal_uren).toFixed(2)} u
+                    Week {w.weeknummer} · {w.jaar} · {toonUren(Number(w.totaal_uren))}
                     {Number(w.overuren) > 0 && (
                       <span className="text-merk">
                         {" "}
-                        (waarvan {Number(w.overuren).toFixed(2)} u overuren)
+                        (waarvan {toonUren(Number(w.overuren))} overuren)
                       </span>
                     )}
                   </p>

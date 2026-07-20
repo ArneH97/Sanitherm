@@ -8,6 +8,7 @@ import {
   isoWeek,
   toonDatum,
   toonTijd,
+  toonUren,
 } from "@/lib/uren";
 import type { Tijdsregistratie } from "@/lib/types";
 import { bevestigWeek } from "./actions";
@@ -124,9 +125,7 @@ export default async function WeekPagina({
                   {toonTijd(d.reg?.checkout ?? null)}
                 </td>
                 <td className="px-4 py-2.5 text-right font-medium text-slate-900">
-                  {d.reg?.gewerkte_uren != null
-                    ? d.reg.gewerkte_uren.toFixed(2)
-                    : "—"}
+                  {toonUren(d.reg?.gewerkte_uren ?? null)}
                 </td>
               </tr>
             ))}
@@ -137,15 +136,15 @@ export default async function WeekPagina({
                 Totaal
               </td>
               <td className="px-4 py-2.5 text-right font-bold text-slate-900">
-                {totaal.toFixed(2)} u
+                {toonUren(totaal)}
               </td>
             </tr>
             <tr>
               <td colSpan={3} className="px-4 py-2.5 text-slate-600">
-                Overuren (boven {norm} u)
+                Overuren (boven {toonUren(norm)})
               </td>
               <td className="px-4 py-2.5 text-right font-bold text-merk">
-                {overuren.toFixed(2)} u
+                {toonUren(overuren)}
               </td>
             </tr>
           </tfoot>

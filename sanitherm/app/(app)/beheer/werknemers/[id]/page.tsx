@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { overurenSaldo } from "@/lib/verlof";
-import { vandaagInBrussel, ancienniteit, toonDatum } from "@/lib/uren";
+import { vandaagInBrussel, ancienniteit, toonDatum, toonUren } from "@/lib/uren";
 import type { Werknemer, Verloftellers } from "@/lib/types";
 import RoosterVelden from "@/components/RoosterVelden";
 import WachtwoordResetKnop from "../WachtwoordResetKnop";
@@ -82,10 +82,7 @@ export default async function WerknemerProfiel({
       {/* Kerncijfers */}
       <div className="grid grid-cols-3 gap-3">
         <Tegel label="Ancienniteit" waarde={ancienniteit(werknemer.startdatum)} />
-        <Tegel
-          label="Overuren open"
-          waarde={`${saldo.beschikbaar.toFixed(1)} u`}
-        />
+        <Tegel label="Overuren open" waarde={toonUren(saldo.beschikbaar)} />
         <Tegel
           label="Prijs/overuur"
           waarde={
@@ -97,8 +94,8 @@ export default async function WerknemerProfiel({
       </div>
 
       <p className="text-xs text-slate-400">
-        Overuren: {saldo.opgebouwd.toFixed(1)} u opgebouwd ·{" "}
-        {saldo.opgenomen.toFixed(1)} u opgenomen · in dienst sinds{" "}
+        Overuren: {toonUren(saldo.opgebouwd)} opgebouwd ·{" "}
+        {toonUren(saldo.opgenomen)} opgenomen · in dienst sinds{" "}
         {werknemer.startdatum ? toonDatum(werknemer.startdatum) : "onbekend"}.
       </p>
 

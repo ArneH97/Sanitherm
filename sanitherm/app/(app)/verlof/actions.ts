@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { huidigeWerknemer } from "@/lib/werknemer";
 import { overurenSaldo } from "@/lib/verlof";
-import { werkdagenTussen } from "@/lib/uren";
+import { werkdagenTussen, toonUren } from "@/lib/uren";
 import { AANVRAAGBARE_VERLOF_TYPES, type VerlofType } from "@/lib/types";
 import type { AanvraagResultaat } from "./types";
 
@@ -46,9 +46,9 @@ export async function verlofAanvragen(
     if (nodigUren > saldo.beschikbaar + 0.001) {
       return {
         ok: false,
-        fout: `Onvoldoende overuren: je vraagt ${nodigUren.toFixed(
-          1
-        )} u aan, maar er is nog ${saldo.beschikbaar.toFixed(1)} u beschikbaar.`,
+        fout: `Onvoldoende overuren: je vraagt ${toonUren(
+          nodigUren
+        )} aan, maar er is nog ${toonUren(saldo.beschikbaar)} beschikbaar.`,
       };
     }
   }

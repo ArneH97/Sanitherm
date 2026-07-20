@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import { verlofAanvragen } from "./actions";
 import type { AanvraagResultaat } from "./types";
+import { toonUren } from "@/lib/uren";
 import {
   AANVRAAGBARE_VERLOF_TYPES,
   VERLOF_LABELS,
@@ -58,7 +59,7 @@ export default function VerlofForm({
             <span className="mt-1 block text-xs text-slate-500">
               Beschikbaar overuren-saldo:{" "}
               <span className="font-medium text-merk">
-                {overurenBeschikbaar.toFixed(1)} u
+                {toonUren(overurenBeschikbaar)}
               </span>{" "}
               (≈ {(overurenBeschikbaar / urenPerDag).toFixed(1)} dagen)
             </span>

@@ -65,6 +65,27 @@ export function toonTijd(iso: string | null): string {
   });
 }
 
+// Toon een aantal (decimale) uren als "8 uren en 30 minuten".
+// Voor gewerkte uren, weektotalen en overuren — niet voor klok-tijden.
+export function toonUren(uren: number | null): string {
+  if (uren == null) return "—";
+  const negatief = uren < 0;
+  const totaalMin = Math.round(Math.abs(uren) * 60);
+  const u = Math.floor(totaalMin / 60);
+  const m = totaalMin % 60;
+
+  const uurLabel = `${u} ${u === 1 ? "uur" : "uren"}`;
+  const minLabel = `${m} ${m === 1 ? "minuut" : "minuten"}`;
+
+  let tekst: string;
+  if (u > 0 && m > 0) tekst = `${uurLabel} en ${minLabel}`;
+  else if (u > 0) tekst = uurLabel;
+  else if (m > 0) tekst = minLabel;
+  else tekst = "0 uren";
+
+  return negatief ? `− ${tekst}` : tekst;
+}
+
 // Bereken de tijdzone-offset (in ms) voor een instant in een gegeven tijdzone.
 function offsetMs(date: Date, timeZone: string): number {
   const dtf = new Intl.DateTimeFormat("en-US", {

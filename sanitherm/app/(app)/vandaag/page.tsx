@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { huidigeWerknemer } from "@/lib/werknemer";
-import { vandaagInBrussel, toonTijd, toonDatum } from "@/lib/uren";
+import { vandaagInBrussel, toonTijd, toonDatum, toonUren } from "@/lib/uren";
 import type { Tijdsregistratie } from "@/lib/types";
 import { inchecken, uitchecken, corrigeer } from "./actions";
 
@@ -69,7 +69,7 @@ export default async function VandaagPagina() {
           <div className="rounded-xl bg-merk-licht py-4 text-center">
             <p className="text-sm text-slate-600">Gewerkt vandaag</p>
             <p className="text-2xl font-bold text-merk">
-              {reg?.gewerkte_uren?.toFixed(2) ?? "—"} u
+              {toonUren(reg?.gewerkte_uren ?? null)}
             </p>
             <p className="mt-1 text-xs text-slate-500">
               (pauze {reg?.pauze_minuten} min afgetrokken)

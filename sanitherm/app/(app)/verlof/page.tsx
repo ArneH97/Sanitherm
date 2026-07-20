@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { huidigeWerknemer } from "@/lib/werknemer";
 import { overurenSaldo } from "@/lib/verlof";
-import { vandaagInBrussel, toonDatum } from "@/lib/uren";
+import { vandaagInBrussel, toonDatum, toonUren } from "@/lib/uren";
 import {
   VERLOF_LABELS,
   STATUS_LABELS,
@@ -79,8 +79,8 @@ export default async function VerlofPagina() {
         />
         <Teller
           label="Overuren"
-          waarde={`${saldo.beschikbaar.toFixed(1)} u`}
-          onder={`opgebouwd ${saldo.opgebouwd.toFixed(1)} u`}
+          waarde={toonUren(saldo.beschikbaar)}
+          onder={`opgebouwd ${toonUren(saldo.opgebouwd)}`}
         />
       </div>
 
