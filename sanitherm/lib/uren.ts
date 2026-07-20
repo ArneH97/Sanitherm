@@ -1,0 +1,113 @@
+// Hulpfuncties voor tijd- en urenberekening.
+
+// Bereken de gewerkte uren op basis van check-in, check-out en pauze (minuten).
+export function berekenGewerkteUren(
+  checkin: string | null,
+  checkout: string | null,
+  pauzeMinuten: number
+): number | null {
+  if (!checkin || !checkout) return null;
+  const start = new Date(checkin).getTime();
+  const eind = new Date(checkout).getTime();
+  if (isNaN(start) || isNaN(eind) || eind <= start) return null;
+  const bruto = (eind - start) / 1000 / 60; // minuten
+  const netto = Math.max(0, bruto - pauzeMinuten);
+  return Math.round((netto / 60) * 100) / 100; // uren, 2 decimalen
+}
+
+// ISO-weeknummer (maandag als eerste dag) en het bijhorende jaar.
+export function isoWeek(datum: Date): { jaar: number; week: number } {
+  const d = new Date(
+    Date.UTC(datum.getFullYear(), datum.getMonth(), datum.getDate())
+  );
+  const dag = d.getUTCDay() || 7; // zondag = 7
+  d.setUTCDate(d.getUTCDate() + 4 - dag);
+  const jaarStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const week = Math.ceil(
+    ((d.getTime() - jaarStart.getTime()) / 86400000 + 1) / 7
+  );
+  return { jaar: d.getUTCFullYear(), week };
+}
+
+// Maandag (start) van de week waarin `datum` valt, als YYYY-MM-DD.
+export function maandagVanWeek(datum: Date): string {
+  const d = new Date(datum);
+  const dag = d.getDay() || 7;
+  d.setDate(d.getDate() - (dag - 1));
+  return isoDatum(d);
+}
+
+// Vandaag als YYYY-MM-DD in de Belgische tijdzone.
+export function vandaagInBrussel(): string {
+  return new Date().toLocaleDateString("en-CA", {
+    timeZone: "Europe/Brussels",
+  });
+}
+
+// Datum naar YYYY-MM-DD (lokale tijd).
+export function isoDatum(datum: Date): string {
+  const j = datum.getFullYear();
+  const m = String(datum.getMonth() + 1).padStart(2, "0");
+  const d = String(datum.getDate()).padStart(2, "0");
+  return `${j}-${m}-${d}`;
+}
+
+const TIJDZONE = "Europe/Brussels";
+
+// Toon een tijdstip als HH:MM in de Belgische tijdzone.
+export function toonTijd(iso: string | null): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return d.toLocaleTimeString("nl-BE", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: TIJDZONE,
+  });
+}
+
+// Bereken de tijdzone-offset (in ms) voor een instant in een gegeven tijdzone.
+function offsetMs(date: Date, timeZone: string): number {
+  const dtf = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hour12: false,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+  const p: Record<string, string> = {};
+  for (const part of dtf.formatToParts(date)) p[part.type] = part.value;
+  const alsUTC = Date.UTC(
+    +p.year,
+    +p.month - 1,
+    +p.day,
+    +p.hour,
+    +p.minute,
+    +p.second
+  );
+  return alsUTC - date.getTime();
+}
+
+// Zet een wandklok-tijd (datum YYYY-MM-DD + tijd HH:MM in België) om naar een
+// correcte UTC-instant (ISO-string). Houdt rekening met zomer-/wintertijd.
+export function wandtijdNaarInstant(
+  datum: string,
+  tijd: string,
+  timeZone = TIJDZONE
+): string {
+  const gok = new Date(`${datum}T${tijd}:00Z`);
+  const offset = offsetMs(gok, timeZone);
+  return new Date(gok.getTime() - offset).toISOString();
+}
+
+// Datumlabel zoals "ma 6 jul".
+export function toonDatum(datum: string): string {
+  const d = new Date(datum + "T00:00:00");
+  return d.toLocaleDateString("nl-BE", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
+}
