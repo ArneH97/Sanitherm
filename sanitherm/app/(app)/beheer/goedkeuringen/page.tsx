@@ -22,12 +22,12 @@ export default async function GoedkeuringenPagina() {
   const [verlofRes, weekRes] = await Promise.all([
     supabase
       .from("verlofaanvragen")
-      .select("*, werknemer:werknemers(naam)")
+      .select("*, werknemer:werknemers!werknemer_id(naam)")
       .eq("status", "aangevraagd")
       .order("aangevraagd_op", { ascending: true }),
     supabase
       .from("weekbevestigingen")
-      .select("*, werknemer:werknemers(naam)")
+      .select("*, werknemer:werknemers!werknemer_id(naam)")
       .not("bevestigd_op", "is", null)
       .is("goedgekeurd_op", null)
       .order("jaar", { ascending: true })
