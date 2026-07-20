@@ -3,6 +3,10 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import { arbeiderToevoegen } from "./actions";
 import type { ToevoegenResultaat } from "./types";
+import RoosterVelden from "@/components/RoosterVelden";
+
+const inputKlasse =
+  "w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none focus:border-merk focus:ring-2 focus:ring-merk/30";
 
 export default function WerknemerToevoegen() {
   const [resultaat, formAction, bezig] = useActionState<
@@ -69,14 +73,72 @@ export default function WerknemerToevoegen() {
           </Veld>
         </div>
 
-        <Veld label="Tijdelijk wachtwoord (leeg = automatisch)">
-          <input
-            name="wachtwoord"
-            autoComplete="off"
-            placeholder="Laat leeg om er een te genereren"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none focus:border-merk focus:ring-2 focus:ring-merk/30"
-          />
-        </Veld>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Veld label="Tijdelijk wachtwoord (leeg = automatisch)">
+            <input
+              name="wachtwoord"
+              autoComplete="off"
+              placeholder="Laat leeg om er een te genereren"
+              className={inputKlasse}
+            />
+          </Veld>
+          <Veld label="Prijs per overuur (€)">
+            <input
+              name="overuur_prijs"
+              inputMode="decimal"
+              placeholder="bv. 25,00"
+              className={inputKlasse}
+            />
+          </Veld>
+        </div>
+
+        <div className="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <RoosterVelden />
+        </div>
+
+        <div className="space-y-3 rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <p className="text-sm font-medium text-slate-700">
+            Verlof dit jaar (in dagen)
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Veld label="Wettelijk verlof — totaal">
+              <input
+                name="wv_totaal"
+                inputMode="decimal"
+                defaultValue={20}
+                className={inputKlasse}
+              />
+            </Veld>
+            <Veld label="Wettelijk verlof — nog over">
+              <input
+                name="wv_over"
+                inputMode="decimal"
+                placeholder="leeg = volledig"
+                className={inputKlasse}
+              />
+            </Veld>
+            <Veld label="ADV-inhaalrust — totaal">
+              <input
+                name="adv_totaal"
+                inputMode="decimal"
+                defaultValue={12}
+                className={inputKlasse}
+              />
+            </Veld>
+            <Veld label="ADV-inhaalrust — nog over">
+              <input
+                name="adv_over"
+                inputMode="decimal"
+                placeholder="leeg = volledig"
+                className={inputKlasse}
+              />
+            </Veld>
+          </div>
+          <p className="text-xs text-slate-400">
+            Zitten we al half in het jaar? Vul dan bij “nog over” in hoeveel de
+            werknemer nu nog heeft. Leeg = gelijk aan het totaal.
+          </p>
+        </div>
 
         {resultaat && !resultaat.ok && (
           <p className="text-sm text-red-600">{resultaat.fout}</p>

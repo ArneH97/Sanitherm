@@ -15,8 +15,30 @@ export interface Werknemer {
   standaard_uren_per_dag: number;
   standaard_uren_per_week: number;
   standaard_pauze_minuten: number;
-  uurloon: number | null;
+  // Prijs per overuur (door de zaakvoerder ingesteld). Het gewone uurloon
+  // wordt niet meer gebruikt.
+  overuur_prijs: number | null;
+  // Standaard weekschema: uren per dag (ma–zo).
+  rooster_ma: number;
+  rooster_di: number;
+  rooster_wo: number;
+  rooster_do: number;
+  rooster_vr: number;
+  rooster_za: number;
+  rooster_zo: number;
 }
+
+export const ROOSTER_DAGEN = [
+  { key: "ma", label: "Ma" },
+  { key: "di", label: "Di" },
+  { key: "wo", label: "Wo" },
+  { key: "do", label: "Do" },
+  { key: "vr", label: "Vr" },
+  { key: "za", label: "Za" },
+  { key: "zo", label: "Zo" },
+] as const;
+
+export type RoosterDag = (typeof ROOSTER_DAGEN)[number]["key"];
 
 export interface Tijdsregistratie {
   id: string;

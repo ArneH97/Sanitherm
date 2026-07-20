@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { overurenSaldo } from "@/lib/verlof";
 import { vandaagInBrussel, ancienniteit, toonDatum } from "@/lib/uren";
 import type { Werknemer, Verloftellers } from "@/lib/types";
+import RoosterVelden from "@/components/RoosterVelden";
 import WachtwoordResetKnop from "../WachtwoordResetKnop";
 import { profielOpslaan, verlofTellerOpslaan } from "../actions";
 
@@ -46,6 +47,15 @@ export default async function WerknemerProfiel({
   ]);
   const teller = tellerRes.data as Verloftellers | null;
 
+  const wvTotaalDef = teller?.wettelijk_verlof_totaal ?? 20;
+  const wvOverDef = teller
+    ? teller.wettelijk_verlof_totaal - teller.wettelijk_verlof_opgenomen
+    : 20;
+  const advTotaalDef = teller?.adv_totaal ?? 12;
+  const advOverDef = teller
+    ? teller.adv_totaal - teller.adv_opgenomen
+    : 12;
+
   const inputKlasse =
     "w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none focus:border-merk focus:ring-2 focus:ring-merk/30";
 
@@ -77,10 +87,10 @@ export default async function WerknemerProfiel({
           waarde={`${saldo.beschikbaar.toFixed(1)} u`}
         />
         <Tegel
-          label="Uurloon"
+          label="Prijs/overuur"
           waarde={
-            werknemer.uurloon != null
-              ? "€ " + werknemer.uurloon.toFixed(2).replace(".", ",")
+            werknemer.overuur_prijs != null
+              ? "€ " + werknemer.overuur_prijs.toFixed(2).replace(".", ",")
               : "—"
           }
         />
@@ -108,32 +118,27 @@ export default async function WerknemerProfiel({
               className={inputKlasse}
             />
           </Veld>
-          <Veld label="Uurloon € (informatief)">
+          <Veld label="Prijs per overuur (€)">
             <input
-              name="uurloon"
+              name="overuur_prijs"
               inputMode="decimal"
-              placeholder="bv. 18,50"
-              defaultValue={werknemer.uurloon ?? ""}
-              className={inputKlasse}
-            />
-          </Veld>
-          <Veld label="Uren per dag">
-            <input
-              name="uren_dag"
-              inputMode="decimal"
-              defaultValue={werknemer.standaard_uren_per_dag}
-              className={inputKlasse}
-            />
-          </Veld>
-          <Veld label="Uren per week">
-            <input
-              name="uren_week"
-              inputMode="decimal"
-              defaultValue={werknemer.standaard_uren_per_week}
+              placeholder="bv. 25,00"
+              defaultValue={werknemer.overuur_prijs ?? ""}
               className={inputKlasse}
             />
           </Veld>
         </div>
+        <RoosterVelden
+          waarden={{
+            ma: werknemer.rooster_ma,
+            di: werknemer.rooster_di,
+            wo: werknemer.rooster_wo,
+            do: werknemer.rooster_do,
+            vr: werknemer.rooster_vr,
+            za: werknemer.rooster_za,
+            zo: werknemer.rooster_zo,
+          }}
+        />
         <button className="rounded-lg bg-merk px-4 py-2.5 font-medium text-white transition hover:bg-merk-donker">
           Gegevens opslaan
         </button>
@@ -151,7 +156,7 @@ export default async function WerknemerProfiel({
             Verlofteller {jaar}
           </h2>
           <p className="text-sm text-slate-500">
-            Stel het begin- en opgenomen saldo in (in dagen).
+            Stel het totaal per jaar in, en hoeveel er nu nog over is (in dagen).
           </p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -159,15 +164,15 @@ export default async function WerknemerProfiel({
             <input
               name="wv_totaal"
               inputMode="decimal"
-              defaultValue={teller?.wettelijk_verlof_totaal ?? 20}
+              defaultValue={wvTotaalDef}
               className={inputKlasse}
             />
           </Veld>
-          <Veld label="Wettelijk verlof — opgenomen">
+          <Veld label="Wettelijk verlof — nog over">
             <input
-              name="wv_opgenomen"
+              name="wv_over"
               inputMode="decimal"
-              defaultValue={teller?.wettelijk_verlof_opgenomen ?? 0}
+              defaultValue={wvOverDef}
               className={inputKlasse}
             />
           </Veld>
@@ -175,15 +180,15 @@ export default async function WerknemerProfiel({
             <input
               name="adv_totaal"
               inputMode="decimal"
-              defaultValue={teller?.adv_totaal ?? 12}
+              defaultValue={advTotaalDef}
               className={inputKlasse}
             />
           </Veld>
-          <Veld label="ADV-inhaalrust — opgenomen">
+          <Veld label="ADV-inhaalrust — nog over">
             <input
-              name="adv_opgenomen"
+              name="adv_over"
               inputMode="decimal"
-              defaultValue={teller?.adv_opgenomen ?? 0}
+              defaultValue={advOverDef}
               className={inputKlasse}
             />
           </Veld>

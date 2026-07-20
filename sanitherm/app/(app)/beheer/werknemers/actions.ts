@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { huidigeWerknemer } from "@/lib/werknemer";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { ROOSTER_DAGEN } from "@/lib/types";
 import type { ToevoegenResultaat, ResetResultaat } from "./types";
 
 // Genereer een leesbaar tijdelijk wachtwoord (geen dubbelzinnige tekens zoals 0/O, 1/l).
@@ -15,6 +16,32 @@ function genereerWachtwoord(lengte = 10): string {
   return out;
 }
 
+function getalOfNull(ruw: string): number | null {
+  const s = ruw.trim();
+  if (!s) return null;
+  const n = Number(s.replace(",", "."));
+  return Number.isNaN(n) ? null : n;
+}
+
+// Lees het weekschema uit het formulier en leid de weekstandaard + de
+// gemiddelde uren per (verlof)dag af.
+function leesRooster(formData: FormData) {
+  const uren: Record<string, number> = {};
+  let som = 0;
+  let werkdagen = 0;
+  for (const d of ROOSTER_DAGEN) {
+    const v = getalOfNull(String(formData.get(`rooster_${d.key}`) ?? "")) ?? 0;
+    const veilig = Math.max(0, v);
+    uren[`rooster_${d.key}`] = veilig;
+    som += veilig;
+    if (veilig > 0) werkdagen++;
+  }
+  const perWeek = Math.round(som * 100) / 100;
+  const perDag =
+    werkdagen > 0 ? Math.round((som / werkdagen) * 100) / 100 : 8;
+  return { uren, perWeek, perDag };
+}
+
 // Zaakvoerder maakt een nieuwe arbeider aan.
 // De databank-trigger (handle_new_user) maakt automatisch het werknemer-profiel
 // aan op basis van de meegegeven metadata (naam + rol).
@@ -22,7 +49,6 @@ export async function arbeiderToevoegen(
   _vorige: ToevoegenResultaat | null,
   formData: FormData
 ): Promise<ToevoegenResultaat> {
-  // Alleen de zaakvoerder mag arbeiders aanmaken.
   const ik = await huidigeWerknemer();
   if (!ik || ik.rol !== "zaakvoerder") {
     return { ok: false, fout: "Geen toestemming." };
@@ -47,8 +73,6 @@ export async function arbeiderToevoegen(
   try {
     const admin = createAdminClient();
 
-    // 1. Auth-account aanmaken. email_confirm = true zodat de arbeider meteen
-    //    kan aanmelden zonder bevestigingsmail.
     const { data, error } = await admin.auth.admin.createUser({
       email,
       password: wachtwoord,
@@ -70,15 +94,42 @@ export async function arbeiderToevoegen(
       };
     }
 
-    // 2. Optionele startdatum bijwerken (de trigger heeft de rij al aangemaakt).
-    if (startdatum) {
-      await admin
-        .from("werknemers")
-        .update({ startdatum })
-        .eq("id", data.user.id);
-    }
+    const uid = data.user.id;
+
+    // Profiel aanvullen: startdatum, prijs per overuur en het weekschema.
+    const { uren, perWeek, perDag } = leesRooster(formData);
+    await admin
+      .from("werknemers")
+      .update({
+        startdatum: startdatum || null,
+        overuur_prijs: getalOfNull(String(formData.get("overuur_prijs") ?? "")),
+        ...uren,
+        standaard_uren_per_week: perWeek,
+        standaard_uren_per_dag: perDag,
+      })
+      .eq("id", uid);
+
+    // Verlofteller voor dit jaar: totaal + hoeveel er nu nog over is.
+    const jaar = new Date().getFullYear();
+    const wvTotaal = getalOfNull(String(formData.get("wv_totaal") ?? "")) ?? 20;
+    const wvOver = getalOfNull(String(formData.get("wv_over") ?? "")) ?? wvTotaal;
+    const advTotaal =
+      getalOfNull(String(formData.get("adv_totaal") ?? "")) ?? 12;
+    const advOver =
+      getalOfNull(String(formData.get("adv_over") ?? "")) ?? advTotaal;
+
+    await admin.from("verloftellers").upsert(
+      {
+        werknemer_id: uid,
+        jaar,
+        wettelijk_verlof_totaal: wvTotaal,
+        wettelijk_verlof_opgenomen: Math.max(0, wvTotaal - wvOver),
+        adv_totaal: advTotaal,
+        adv_opgenomen: Math.max(0, advTotaal - advOver),
+      },
+      { onConflict: "werknemer_id,jaar" }
+    );
   } catch (e) {
-    // Bv. wanneer de service_role-sleutel niet is ingesteld op de server.
     const bericht = e instanceof Error ? e.message : "onbekende serverfout";
     return { ok: false, fout: "Serverfout: " + bericht };
   }
@@ -90,8 +141,6 @@ export async function arbeiderToevoegen(
 }
 
 // Zaakvoerder stelt een nieuw tijdelijk wachtwoord in voor een arbeider.
-// Nodig wanneer het wachtwoord verloren is (het oorspronkelijke wordt maar
-// één keer getoond en kan nadien niet meer worden opgevraagd).
 export async function wachtwoordOpnieuw(
   _vorige: ResetResultaat | null,
   formData: FormData
@@ -123,7 +172,7 @@ export async function wachtwoordOpnieuw(
 }
 
 // Zaakvoerder past het profiel van een arbeider aan:
-// startdatum (voor ancienniteit), uurloon en het standaardrooster.
+// startdatum (ancienniteit), prijs per overuur en het weekschema.
 export async function profielOpslaan(formData: FormData) {
   const ik = await huidigeWerknemer();
   if (!ik || ik.rol !== "zaakvoerder") return;
@@ -132,33 +181,20 @@ export async function profielOpslaan(formData: FormData) {
   if (!id) return;
 
   const startdatum = String(formData.get("startdatum") ?? "").trim();
-  const uurloonRuw = String(formData.get("uurloon") ?? "").trim();
-  const urenDagRuw = String(formData.get("uren_dag") ?? "").trim();
-  const urenWeekRuw = String(formData.get("uren_week") ?? "").trim();
-
-  const getal = (ruw: string): number | null => {
-    if (!ruw) return null;
-    const n = Number(ruw.replace(",", "."));
-    return Number.isNaN(n) ? null : n;
-  };
-
-  const update: {
-    startdatum: string | null;
-    uurloon: number | null;
-    standaard_uren_per_dag?: number;
-    standaard_uren_per_week?: number;
-  } = {
-    startdatum: startdatum || null,
-    uurloon: getal(uurloonRuw),
-  };
-  const ud = getal(urenDagRuw);
-  const uw = getal(urenWeekRuw);
-  if (ud != null) update.standaard_uren_per_dag = ud;
-  if (uw != null) update.standaard_uren_per_week = uw;
+  const { uren, perWeek, perDag } = leesRooster(formData);
 
   try {
     const admin = createAdminClient();
-    await admin.from("werknemers").update(update).eq("id", id);
+    await admin
+      .from("werknemers")
+      .update({
+        startdatum: startdatum || null,
+        overuur_prijs: getalOfNull(String(formData.get("overuur_prijs") ?? "")),
+        ...uren,
+        standaard_uren_per_week: perWeek,
+        standaard_uren_per_dag: perDag,
+      })
+      .eq("id", id);
   } catch {
     return;
   }
@@ -168,7 +204,8 @@ export async function profielOpslaan(formData: FormData) {
   revalidatePath("/beheer");
 }
 
-// Zaakvoerder stelt het beginsaldo van de verloftellers in voor een jaar.
+// Zaakvoerder stelt de verloftellers in: totaal per jaar + hoeveel er nu nog
+// over is. Het opgenomen aantal wordt daaruit afgeleid.
 export async function verlofTellerOpslaan(formData: FormData) {
   const ik = await huidigeWerknemer();
   if (!ik || ik.rol !== "zaakvoerder") return;
@@ -177,10 +214,10 @@ export async function verlofTellerOpslaan(formData: FormData) {
   const jaar = Number(formData.get("jaar"));
   if (!id || !jaar) return;
 
-  const getal = (k: string, standaard: number): number => {
-    const n = Number(String(formData.get(k) ?? "").replace(",", "."));
-    return Number.isNaN(n) ? standaard : n;
-  };
+  const wvTotaal = getalOfNull(String(formData.get("wv_totaal") ?? "")) ?? 20;
+  const wvOver = getalOfNull(String(formData.get("wv_over") ?? "")) ?? wvTotaal;
+  const advTotaal = getalOfNull(String(formData.get("adv_totaal") ?? "")) ?? 12;
+  const advOver = getalOfNull(String(formData.get("adv_over") ?? "")) ?? advTotaal;
 
   try {
     const admin = createAdminClient();
@@ -188,10 +225,10 @@ export async function verlofTellerOpslaan(formData: FormData) {
       {
         werknemer_id: id,
         jaar,
-        wettelijk_verlof_totaal: getal("wv_totaal", 20),
-        wettelijk_verlof_opgenomen: getal("wv_opgenomen", 0),
-        adv_totaal: getal("adv_totaal", 12),
-        adv_opgenomen: getal("adv_opgenomen", 0),
+        wettelijk_verlof_totaal: wvTotaal,
+        wettelijk_verlof_opgenomen: Math.max(0, wvTotaal - wvOver),
+        adv_totaal: advTotaal,
+        adv_opgenomen: Math.max(0, advTotaal - advOver),
       },
       { onConflict: "werknemer_id,jaar" }
     );
@@ -216,7 +253,6 @@ export async function arbeiderActiefWisselen(formData: FormData) {
     const admin = createAdminClient();
     await admin.from("werknemers").update({ actief: naarActief }).eq("id", id);
   } catch {
-    // stil falen: knop doet niets als de server niet correct is ingesteld
     return;
   }
 
