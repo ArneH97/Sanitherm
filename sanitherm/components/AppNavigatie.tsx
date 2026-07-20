@@ -10,7 +10,8 @@ export type IconNaam =
   | "ziek"
   | "overzicht"
   | "goedkeuringen"
-  | "werknemers";
+  | "werknemers"
+  | "export";
 
 export interface NavLink {
   href: string;
@@ -158,6 +159,12 @@ function Icon({ naam, className }: { naam: IconNaam; className?: string }) {
         <circle cx="9" cy="8" r="3.2" />
         <path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" />
         <path d="M16.5 5.6a3.2 3.2 0 0 1 0 5.6M21 20c0-2.6-1.4-4.8-3.5-5.7" />
+      </>
+    ),
+    export: (
+      <>
+        <path d="M12 3v12M8 11l4 4 4-4" />
+        <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
       </>
     ),
   };

@@ -27,6 +27,12 @@ export default async function AppLayout({
           kort: "Ploeg",
           icon: "werknemers",
         },
+        {
+          href: "/beheer/export",
+          label: "Export",
+          kort: "Export",
+          icon: "export",
+        },
       ]
     : [
         { href: "/vandaag", label: "Vandaag", kort: "Vandaag", icon: "vandaag" },
