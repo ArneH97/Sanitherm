@@ -163,6 +163,12 @@ export async function wachtwoordOpnieuw(
     if (error) {
       return { ok: false, fout: "Mislukt: " + error.message };
     }
+    // De werknemer moet dit tijdelijke wachtwoord bij de volgende aanmelding
+    // opnieuw door een eigen wachtwoord vervangen.
+    await admin
+      .from("werknemers")
+      .update({ wachtwoord_ingesteld: false })
+      .eq("id", id);
   } catch (e) {
     const bericht = e instanceof Error ? e.message : "onbekende serverfout";
     return { ok: false, fout: "Serverfout: " + bericht };

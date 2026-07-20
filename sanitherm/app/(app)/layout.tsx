@@ -9,6 +9,8 @@ export default async function AppLayout({
 }) {
   const werknemer = await huidigeWerknemer();
   if (!werknemer) redirect("/login");
+  // Eerste aanmelding: eerst een eigen wachtwoord instellen.
+  if (!werknemer.wachtwoord_ingesteld) redirect("/wachtwoord");
 
   const isBaas = werknemer.rol === "zaakvoerder";
 

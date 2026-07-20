@@ -27,6 +27,8 @@ export interface Werknemer {
   email: string;
   rol: Rol;
   actief: boolean;
+  // false tot de werknemer bij de eerste aanmelding een eigen wachtwoord koos.
+  wachtwoord_ingesteld: boolean;
   startdatum: string | null;
   provincie: string;
   standaard_uren_per_dag: number;
