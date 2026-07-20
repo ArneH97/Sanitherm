@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { attestSignedUrl } from "@/lib/attest";
+import { attestSignedUrls } from "@/lib/attest";
 import { vandaagInBrussel, toonTijd, toonDatum, toonUren } from "@/lib/uren";
 import type { Tijdsregistratie, Werknemer } from "@/lib/types";
 
@@ -47,12 +47,13 @@ export default async function BeheerOverzicht() {
     .order("gemeld_op", { ascending: false })
     .limit(15);
   const ziekmeldingen = (zData as unknown as ZiekRij[]) ?? [];
-  const ziekMetUrl = await Promise.all(
-    ziekmeldingen.map(async (z) => ({
-      ziek: z,
-      url: await attestSignedUrl(z.attest_pad),
-    }))
+  const ziekUrls = await attestSignedUrls(
+    ziekmeldingen.map((z) => z.attest_pad)
   );
+  const ziekMetUrl = ziekmeldingen.map((z, i) => ({
+    ziek: z,
+    url: ziekUrls[i],
+  }));
 
   const regVoor = (id: string) =>
     regs.find((r) => r.werknemer_id === id) ?? null;

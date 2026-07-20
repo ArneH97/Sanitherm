@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { huidigeWerknemer } from "@/lib/werknemer";
-import { attestSignedUrl } from "@/lib/attest";
+import { attestSignedUrls } from "@/lib/attest";
 import { toonDatum } from "@/lib/uren";
 import type { Ziektemelding } from "@/lib/types";
 import ZiekForm from "./ZiekForm";
@@ -19,12 +19,8 @@ export default async function ZiekPagina() {
     .limit(20);
   const meldingen = (data as Ziektemelding[]) ?? [];
 
-  const metUrl = await Promise.all(
-    meldingen.map(async (m) => ({
-      melding: m,
-      url: await attestSignedUrl(m.attest_pad),
-    }))
-  );
+  const urls = await attestSignedUrls(meldingen.map((m) => m.attest_pad));
+  const metUrl = meldingen.map((m, i) => ({ melding: m, url: urls[i] }));
 
   return (
     <div className="space-y-6">
