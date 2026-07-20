@@ -3,7 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { huidigeWerknemer } from "@/lib/werknemer";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
+import { overurenSaldo } from "@/lib/verlof";
 import { ROOSTER_DAGEN } from "@/lib/types";
+import type { Werknemer } from "@/lib/types";
 import type { ToevoegenResultaat, ResetResultaat } from "./types";
 
 // Genereer een leesbaar tijdelijk wachtwoord (geen dubbelzinnige tekens zoals 0/O, 1/l).
@@ -243,6 +246,50 @@ export async function verlofTellerOpslaan(formData: FormData) {
   }
 
   revalidatePath(`/beheer/werknemers/${id}`);
+}
+
+// Zaakvoerder betaalt een aantal overuren uit. Dit verlaagt het beschikbare
+// overuren-saldo. Het tarief (prijs per overuur) en het bedrag worden bewaard.
+export async function overurenUitbetalen(formData: FormData) {
+  const ik = await huidigeWerknemer();
+  if (!ik || ik.rol !== "zaakvoerder") return;
+
+  const id = String(formData.get("id") ?? "");
+  const uren = Number(String(formData.get("uren") ?? "").replace(",", "."));
+  if (!id || Number.isNaN(uren) || uren <= 0) return;
+
+  const supabase = await createClient();
+  const { data: wData } = await supabase
+    .from("werknemers")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  const werknemer = wData as Werknemer | null;
+  if (!werknemer) return;
+
+  // Niet meer uitbetalen dan er beschikbaar is.
+  const saldo = await overurenSaldo(werknemer);
+  if (uren > saldo.beschikbaar + 0.001) return;
+
+  const tarief = werknemer.overuur_prijs;
+  const bedrag =
+    tarief != null ? Math.round(uren * Number(tarief) * 100) / 100 : null;
+
+  try {
+    const admin = createAdminClient();
+    await admin.from("overuren_uitbetalingen").insert({
+      werknemer_id: id,
+      uren,
+      tarief,
+      bedrag,
+      uitbetaald_door: ik.id,
+    });
+  } catch {
+    return;
+  }
+
+  revalidatePath(`/beheer/werknemers/${id}`);
+  revalidatePath("/verlof");
 }
 
 // Arbeider (de)activeren. Een inactieve arbeider blijft in de historiek staan

@@ -2,10 +2,18 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { overurenSaldo } from "@/lib/verlof";
 import { vandaagInBrussel, ancienniteit, toonDatum, toonUren } from "@/lib/uren";
-import type { Werknemer, Verloftellers } from "@/lib/types";
+import type {
+  Werknemer,
+  Verloftellers,
+  OverurenUitbetaling,
+} from "@/lib/types";
 import RoosterVelden from "@/components/RoosterVelden";
 import WachtwoordResetKnop from "../WachtwoordResetKnop";
-import { profielOpslaan, verlofTellerOpslaan } from "../actions";
+import {
+  profielOpslaan,
+  verlofTellerOpslaan,
+  overurenUitbetalen,
+} from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +44,7 @@ export default async function WerknemerProfiel({
     );
   }
 
-  const [saldo, tellerRes] = await Promise.all([
+  const [saldo, tellerRes, uitbetRes] = await Promise.all([
     overurenSaldo(werknemer),
     supabase
       .from("verloftellers")
@@ -44,8 +52,20 @@ export default async function WerknemerProfiel({
       .eq("werknemer_id", id)
       .eq("jaar", jaar)
       .maybeSingle(),
+    supabase
+      .from("overuren_uitbetalingen")
+      .select("*")
+      .eq("werknemer_id", id)
+      .order("uitbetaald_op", { ascending: false })
+      .limit(12),
   ]);
   const teller = tellerRes.data as Verloftellers | null;
+  const uitbetalingen = (uitbetRes.data as OverurenUitbetaling[]) ?? [];
+
+  const tarief = werknemer.overuur_prijs;
+  const waardeBeschikbaar =
+    tarief != null ? saldo.beschikbaar * Number(tarief) : null;
+  const euro = (n: number) => "€ " + n.toFixed(2).replace(".", ",");
 
   const wvTotaalDef = teller?.wettelijk_verlof_totaal ?? 20;
   const wvOverDef = teller
@@ -94,10 +114,100 @@ export default async function WerknemerProfiel({
       </div>
 
       <p className="text-xs text-slate-400">
-        Overuren: {toonUren(saldo.opgebouwd)} opgebouwd ·{" "}
-        {toonUren(saldo.opgenomen)} opgenomen · in dienst sinds{" "}
+        In dienst sinds{" "}
         {werknemer.startdatum ? toonDatum(werknemer.startdatum) : "onbekend"}.
       </p>
+
+      {/* Overuren & uitbetaling */}
+      <div className="space-y-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-base font-semibold text-slate-900">Overuren</h2>
+          <div className="text-right">
+            <span className="text-lg font-bold text-merk">
+              {toonUren(saldo.beschikbaar)}
+            </span>
+            {waardeBeschikbaar != null && (
+              <span className="ml-2 text-sm text-slate-500">
+                ≈ {euro(waardeBeschikbaar)}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2 text-center text-sm">
+          <div className="rounded-lg bg-slate-50 p-2">
+            <div className="font-semibold text-slate-800">
+              {toonUren(saldo.opgebouwd)}
+            </div>
+            <div className="text-[11px] text-slate-500">opgebouwd</div>
+          </div>
+          <div className="rounded-lg bg-slate-50 p-2">
+            <div className="font-semibold text-slate-800">
+              {toonUren(saldo.opgenomen)}
+            </div>
+            <div className="text-[11px] text-slate-500">recuperatie</div>
+          </div>
+          <div className="rounded-lg bg-slate-50 p-2">
+            <div className="font-semibold text-slate-800">
+              {toonUren(saldo.uitbetaald)}
+            </div>
+            <div className="text-[11px] text-slate-500">uitbetaald</div>
+          </div>
+        </div>
+
+        {tarief != null ? (
+          <form
+            action={overurenUitbetalen}
+            className="flex flex-wrap items-end gap-3 border-t border-slate-100 pt-4"
+          >
+            <input type="hidden" name="id" value={werknemer.id} />
+            <label className="block">
+              <span className="mb-1 block text-sm font-medium text-slate-700">
+                Uren uitbetalen
+              </span>
+              <input
+                name="uren"
+                inputMode="decimal"
+                required
+                placeholder="bv. 5"
+                className={inputKlasse + " w-32"}
+              />
+            </label>
+            <span className="pb-2 text-sm text-slate-500">
+              aan {euro(Number(tarief))} per uur
+            </span>
+            <button className="rounded-lg bg-merk px-4 py-2.5 font-medium text-white transition hover:bg-merk-donker">
+              Uitbetalen
+            </button>
+          </form>
+        ) : (
+          <p className="border-t border-slate-100 pt-4 text-sm text-amber-600">
+            Stel eerst een <b>prijs per overuur</b> in bij “Gegevens” hieronder,
+            dan kan je overuren uitbetalen.
+          </p>
+        )}
+
+        {uitbetalingen.length > 0 && (
+          <div className="border-t border-slate-100 pt-3">
+            <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-400">
+              Reeds uitbetaald
+            </p>
+            <ul className="divide-y divide-slate-100 text-sm">
+              {uitbetalingen.map((u) => (
+                <li key={u.id} className="flex justify-between py-1.5">
+                  <span className="text-slate-600">
+                    {toonDatum(u.uitbetaald_op.slice(0, 10))} ·{" "}
+                    {toonUren(u.uren)}
+                  </span>
+                  <span className="font-medium text-slate-800">
+                    {u.bedrag != null ? euro(Number(u.bedrag)) : "—"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
 
       {/* Profiel bewerken */}
       <form

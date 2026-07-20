@@ -7,9 +7,10 @@ import type { Werknemer } from "@/lib/types";
 //                van het type 'overuren' met status aangevraagd of goedgekeurd)
 // - beschikbaar: opgebouwd - opgenomen
 export interface OverurenSaldo {
-  opgebouwd: number;
-  opgenomen: number;
-  beschikbaar: number;
+  opgebouwd: number; // uit bevestigde weken
+  opgenomen: number; // als inhaalrust opgenomen (verlof van overuren)
+  uitbetaald: number; // door de zaakvoerder uitbetaald
+  beschikbaar: number; // opgebouwd - opgenomen - uitbetaald
 }
 
 export async function overurenSaldo(
@@ -17,8 +18,8 @@ export async function overurenSaldo(
 ): Promise<OverurenSaldo> {
   const supabase = await createClient();
 
-  // De twee queries hebben elkaar niet nodig: parallel uitvoeren.
-  const [wekenRes, aanvragenRes] = await Promise.all([
+  // De queries hebben elkaar niet nodig: parallel uitvoeren.
+  const [wekenRes, aanvragenRes, uitbetRes] = await Promise.all([
     supabase
       .from("weekbevestigingen")
       .select("overuren, bevestigd_op")
@@ -29,6 +30,10 @@ export async function overurenSaldo(
       .eq("werknemer_id", werknemer.id)
       .eq("type", "overuren")
       .in("status", ["aangevraagd", "goedgekeurd"]),
+    supabase
+      .from("overuren_uitbetalingen")
+      .select("uren")
+      .eq("werknemer_id", werknemer.id),
   ]);
 
   // Opgebouwd: overuren uit bevestigde weken.
@@ -39,18 +44,24 @@ export async function overurenSaldo(
 
   // Opgenomen: dagen inhaalrust × standaard uren per dag.
   const aanvragen = aanvragenRes.data;
-
   const opgenomenDagen = (aanvragen ?? []).reduce(
     (s, a) => s + Number(a.aantal_dagen ?? 0),
     0
   );
   const opgenomen = opgenomenDagen * Number(werknemer.standaard_uren_per_dag);
 
-  const beschikbaar = Math.round((opgebouwd - opgenomen) * 100) / 100;
+  // Uitbetaald: som van de uitbetaalde uren.
+  const uitbetaald = (uitbetRes.data ?? []).reduce(
+    (s, u) => s + Number(u.uren ?? 0),
+    0
+  );
+
+  const rond = (n: number) => Math.round(n * 100) / 100;
 
   return {
-    opgebouwd: Math.round(opgebouwd * 100) / 100,
-    opgenomen: Math.round(opgenomen * 100) / 100,
-    beschikbaar,
+    opgebouwd: rond(opgebouwd),
+    opgenomen: rond(opgenomen),
+    uitbetaald: rond(uitbetaald),
+    beschikbaar: rond(opgebouwd - opgenomen - uitbetaald),
   };
 }

@@ -24,6 +24,12 @@ export default async function AppLayout({
           icon: "goedkeuringen",
         },
         {
+          href: "/beheer/kalender",
+          label: "Kalender",
+          kort: "Kalender",
+          icon: "kalender",
+        },
+        {
           href: "/beheer/werknemers",
           label: "Werknemers",
           kort: "Ploeg",

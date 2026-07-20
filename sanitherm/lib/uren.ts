@@ -159,6 +159,48 @@ export function isoWeekNaarDatums(
   return { van: fmt(maandag), tot: fmt(zondag) };
 }
 
+// ---- Kalender-helpers ----
+
+// Alle 42 dagen (6 weken, maandag-eerst) voor de maand "YYYY-MM", als YYYY-MM-DD.
+export function maandGrid(maand: string): string[] {
+  const [j, m] = maand.split("-").map(Number);
+  const eerste = new Date(Date.UTC(j, m - 1, 1));
+  const dow = eerste.getUTCDay() || 7; // maandag = 1 … zondag = 7
+  const start = new Date(eerste);
+  start.setUTCDate(eerste.getUTCDate() - (dow - 1));
+
+  const dagen: string[] = [];
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(start);
+    d.setUTCDate(start.getUTCDate() + i);
+    dagen.push(
+      `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(
+        2,
+        "0"
+      )}-${String(d.getUTCDate()).padStart(2, "0")}`
+    );
+  }
+  return dagen;
+}
+
+// Maandlabel, bv. "juli 2026".
+export function toonMaand(maand: string): string {
+  const [j, m] = maand.split("-").map(Number);
+  const d = new Date(Date.UTC(j, m - 1, 1));
+  return d.toLocaleDateString("nl-BE", {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+// Verschuif een maand ("YYYY-MM") met een aantal maanden.
+export function maandVerschuif(maand: string, delta: number): string {
+  const [j, m] = maand.split("-").map(Number);
+  const d = new Date(Date.UTC(j, m - 1 + delta, 1));
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
 // Ancienniteit als leesbare tekst, bv. "3 jaar, 2 maanden".
 export function ancienniteit(startdatum: string | null): string {
   if (!startdatum) return "onbekend";

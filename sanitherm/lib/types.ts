@@ -102,6 +102,17 @@ export interface Verlofaanvraag {
   beoordeeld_op: string | null;
 }
 
+export interface OverurenUitbetaling {
+  id: string;
+  werknemer_id: string;
+  uren: number;
+  tarief: number | null;
+  bedrag: number | null;
+  uitbetaald_door: string | null;
+  uitbetaald_op: string;
+  opmerking: string | null;
+}
+
 export interface Verloftellers {
   id: string;
   werknemer_id: string;

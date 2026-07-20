@@ -11,6 +11,7 @@ export type IconNaam =
   | "overzicht"
   | "goedkeuringen"
   | "werknemers"
+  | "kalender"
   | "export";
 
 export interface NavLink {
@@ -159,6 +160,13 @@ function Icon({ naam, className }: { naam: IconNaam; className?: string }) {
         <circle cx="9" cy="8" r="3.2" />
         <path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" />
         <path d="M16.5 5.6a3.2 3.2 0 0 1 0 5.6M21 20c0-2.6-1.4-4.8-3.5-5.7" />
+      </>
+    ),
+    kalender: (
+      <>
+        <rect x="3" y="4.5" width="18" height="16.5" rx="2" />
+        <path d="M3 9.5h18M8 2.5v4M16 2.5v4" />
+        <rect x="6.5" y="12.5" width="3" height="3" rx="0.5" />
       </>
     ),
     export: (
