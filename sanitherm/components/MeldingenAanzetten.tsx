@@ -6,11 +6,12 @@ import { pushInschrijven, pushUitschrijven } from "@/app/(app)/push-actions";
 type Status = "laden" | "uit" | "aan" | "geweigerd" | "niet-ondersteund";
 
 // Zet een base64url VAPID-sleutel om naar het formaat dat de browser verwacht.
-function sleutelNaarBytes(base64: string): Uint8Array {
+function sleutelNaarBytes(base64: string) {
   const opvulling = "=".repeat((4 - (base64.length % 4)) % 4);
   const b64 = (base64 + opvulling).replace(/-/g, "+").replace(/_/g, "/");
   const ruw = atob(b64);
-  const bytes = new Uint8Array(ruw.length);
+  const buffer = new ArrayBuffer(ruw.length);
+  const bytes = new Uint8Array(buffer);
   for (let i = 0; i < ruw.length; i++) bytes[i] = ruw.charCodeAt(i);
   return bytes;
 }
@@ -56,7 +57,7 @@ export default function MeldingenAanzetten() {
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: sleutelNaarBytes(publiekeSleutel),
+        applicationServerKey: sleutelNaarBytes(publiekeSleutel) as BufferSource,
       });
       const json = sub.toJSON();
       const res = await pushInschrijven({

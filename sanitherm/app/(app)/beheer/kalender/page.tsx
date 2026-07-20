@@ -70,7 +70,10 @@ export default async function KalenderPagina({
   // Kleur per werknemer (stabiel op naam gesorteerd).
   const werknemers = Array.from(
     new Map(
-      aanvragen.map((a) => [a.werknemer_id, a.werknemer?.naam ?? "Onbekend"])
+      aanvragen.map(
+        (a) =>
+          [a.werknemer_id, a.werknemer?.naam ?? "Onbekend"] as [string, string]
+      )
     ).entries()
   ).sort((a, b) => a[1].localeCompare(b[1]));
   const kleurVan = new Map<string, string>();
