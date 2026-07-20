@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import type { Werknemer } from "@/lib/types";
 import WerknemerToevoegen from "./WerknemerToevoegen";
@@ -34,17 +35,23 @@ export default async function WerknemersPagina() {
               className={`px-4 py-3 ${w.actief ? "" : "bg-slate-50"}`}
             >
               <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-                <div className="min-w-0">
-                  <p className="font-medium text-slate-800">
+                <Link
+                  href={`/beheer/werknemers/${w.id}`}
+                  className="group min-w-0 flex-1"
+                >
+                  <p className="font-medium text-slate-800 group-hover:text-merk">
                     {w.naam}
                     {!w.actief && (
                       <span className="ml-2 rounded bg-slate-200 px-1.5 py-0.5 text-xs font-medium text-slate-500">
                         inactief
                       </span>
                     )}
+                    <span className="ml-1 text-slate-300 group-hover:text-merk">
+                      ›
+                    </span>
                   </p>
                   <p className="truncate text-sm text-slate-500">{w.email}</p>
-                </div>
+                </Link>
                 <div className="flex items-center gap-4">
                   <WachtwoordResetKnop id={w.id} naam={w.naam} />
                   <form action={arbeiderActiefWisselen} className="inline">

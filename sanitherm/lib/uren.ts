@@ -112,6 +112,28 @@ export function toonDatum(datum: string): string {
   });
 }
 
+// Ancienniteit als leesbare tekst, bv. "3 jaar, 2 maanden".
+export function ancienniteit(startdatum: string | null): string {
+  if (!startdatum) return "onbekend";
+  const start = new Date(startdatum + "T12:00:00");
+  const nu = new Date(vandaagInBrussel() + "T12:00:00");
+  if (isNaN(start.getTime()) || start > nu) return "—";
+
+  let maanden =
+    (nu.getFullYear() - start.getFullYear()) * 12 +
+    (nu.getMonth() - start.getMonth());
+  if (nu.getDate() < start.getDate()) maanden--;
+  if (maanden < 0) maanden = 0;
+
+  const jaren = Math.floor(maanden / 12);
+  const rest = maanden % 12;
+  const delen: string[] = [];
+  if (jaren > 0) delen.push(`${jaren} jaar`);
+  if (rest > 0) delen.push(`${rest} maand${rest === 1 ? "" : "en"}`);
+  if (delen.length === 0) return "minder dan een maand";
+  return delen.join(", ");
+}
+
 // Aantal werkdagen (ma–vr) tussen twee datums, beide inbegrepen.
 // Weekends tellen niet mee. Feestdagen/bouwverlof worden hier niet afgetrokken.
 export function werkdagenTussen(van: string, tot: string): number {

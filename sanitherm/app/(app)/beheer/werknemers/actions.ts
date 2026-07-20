@@ -122,6 +122,86 @@ export async function wachtwoordOpnieuw(
   return { ok: true, wachtwoord };
 }
 
+// Zaakvoerder past het profiel van een arbeider aan:
+// startdatum (voor ancienniteit), uurloon en het standaardrooster.
+export async function profielOpslaan(formData: FormData) {
+  const ik = await huidigeWerknemer();
+  if (!ik || ik.rol !== "zaakvoerder") return;
+
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  const startdatum = String(formData.get("startdatum") ?? "").trim();
+  const uurloonRuw = String(formData.get("uurloon") ?? "").trim();
+  const urenDagRuw = String(formData.get("uren_dag") ?? "").trim();
+  const urenWeekRuw = String(formData.get("uren_week") ?? "").trim();
+
+  const getal = (ruw: string): number | null => {
+    if (!ruw) return null;
+    const n = Number(ruw.replace(",", "."));
+    return Number.isNaN(n) ? null : n;
+  };
+
+  const update: {
+    startdatum: string | null;
+    uurloon: number | null;
+    standaard_uren_per_dag?: number;
+    standaard_uren_per_week?: number;
+  } = {
+    startdatum: startdatum || null,
+    uurloon: getal(uurloonRuw),
+  };
+  const ud = getal(urenDagRuw);
+  const uw = getal(urenWeekRuw);
+  if (ud != null) update.standaard_uren_per_dag = ud;
+  if (uw != null) update.standaard_uren_per_week = uw;
+
+  try {
+    const admin = createAdminClient();
+    await admin.from("werknemers").update(update).eq("id", id);
+  } catch {
+    return;
+  }
+
+  revalidatePath(`/beheer/werknemers/${id}`);
+  revalidatePath("/beheer/werknemers");
+  revalidatePath("/beheer");
+}
+
+// Zaakvoerder stelt het beginsaldo van de verloftellers in voor een jaar.
+export async function verlofTellerOpslaan(formData: FormData) {
+  const ik = await huidigeWerknemer();
+  if (!ik || ik.rol !== "zaakvoerder") return;
+
+  const id = String(formData.get("id") ?? "");
+  const jaar = Number(formData.get("jaar"));
+  if (!id || !jaar) return;
+
+  const getal = (k: string, standaard: number): number => {
+    const n = Number(String(formData.get(k) ?? "").replace(",", "."));
+    return Number.isNaN(n) ? standaard : n;
+  };
+
+  try {
+    const admin = createAdminClient();
+    await admin.from("verloftellers").upsert(
+      {
+        werknemer_id: id,
+        jaar,
+        wettelijk_verlof_totaal: getal("wv_totaal", 20),
+        wettelijk_verlof_opgenomen: getal("wv_opgenomen", 0),
+        adv_totaal: getal("adv_totaal", 12),
+        adv_opgenomen: getal("adv_opgenomen", 0),
+      },
+      { onConflict: "werknemer_id,jaar" }
+    );
+  } catch {
+    return;
+  }
+
+  revalidatePath(`/beheer/werknemers/${id}`);
+}
+
 // Arbeider (de)activeren. Een inactieve arbeider blijft in de historiek staan
 // maar verdwijnt uit het dagelijkse overzicht.
 export async function arbeiderActiefWisselen(formData: FormData) {
