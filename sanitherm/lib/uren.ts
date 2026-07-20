@@ -111,3 +111,18 @@ export function toonDatum(datum: string): string {
     month: "short",
   });
 }
+
+// Aantal werkdagen (ma–vr) tussen twee datums, beide inbegrepen.
+// Weekends tellen niet mee. Feestdagen/bouwverlof worden hier niet afgetrokken.
+export function werkdagenTussen(van: string, tot: string): number {
+  const d = new Date(van + "T12:00:00");
+  const eind = new Date(tot + "T12:00:00");
+  if (isNaN(d.getTime()) || isNaN(eind.getTime()) || eind < d) return 0;
+  let n = 0;
+  while (d <= eind) {
+    const dag = d.getDay(); // 0 = zondag, 6 = zaterdag
+    if (dag !== 0 && dag !== 6) n++;
+    d.setDate(d.getDate() + 1);
+  }
+  return n;
+}

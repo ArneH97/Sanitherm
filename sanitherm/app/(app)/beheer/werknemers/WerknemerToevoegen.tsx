@@ -67,14 +67,6 @@ export default function WerknemerToevoegen() {
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none focus:border-merk focus:ring-2 focus:ring-merk/30"
             />
           </Veld>
-          <Veld label="Uurloon € (optioneel)">
-            <input
-              name="uurloon"
-              inputMode="decimal"
-              placeholder="bv. 18,50"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none focus:border-merk focus:ring-2 focus:ring-merk/30"
-            />
-          </Veld>
         </div>
 
         <Veld label="Tijdelijk wachtwoord (leeg = automatisch)">

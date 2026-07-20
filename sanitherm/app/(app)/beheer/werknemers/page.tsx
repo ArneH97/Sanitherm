@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import type { Werknemer } from "@/lib/types";
 import WerknemerToevoegen from "./WerknemerToevoegen";
+import WachtwoordResetKnop from "./WachtwoordResetKnop";
 import { arbeiderActiefWisselen } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -26,28 +27,26 @@ export default async function WerknemersPagina() {
       <WerknemerToevoegen />
 
       <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-left text-xs uppercase text-slate-400">
-            <tr>
-              <th className="px-4 py-2 font-medium">Naam</th>
-              <th className="px-4 py-2 font-medium">E-mail</th>
-              <th className="px-4 py-2 text-right font-medium">Uurloon</th>
-              <th className="px-4 py-2 text-right font-medium">Status</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {werknemers.map((w) => (
-              <tr key={w.id} className={w.actief ? "" : "bg-slate-50"}>
-                <td className="px-4 py-2.5 font-medium text-slate-800">
-                  {w.naam}
-                </td>
-                <td className="px-4 py-2.5 text-slate-500">{w.email}</td>
-                <td className="px-4 py-2.5 text-right text-slate-600">
-                  {w.uurloon != null
-                    ? "€ " + w.uurloon.toFixed(2).replace(".", ",")
-                    : "—"}
-                </td>
-                <td className="px-4 py-2.5 text-right">
+        <ul className="divide-y divide-slate-100">
+          {werknemers.map((w) => (
+            <li
+              key={w.id}
+              className={`px-4 py-3 ${w.actief ? "" : "bg-slate-50"}`}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                <div className="min-w-0">
+                  <p className="font-medium text-slate-800">
+                    {w.naam}
+                    {!w.actief && (
+                      <span className="ml-2 rounded bg-slate-200 px-1.5 py-0.5 text-xs font-medium text-slate-500">
+                        inactief
+                      </span>
+                    )}
+                  </p>
+                  <p className="truncate text-sm text-slate-500">{w.email}</p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <WachtwoordResetKnop id={w.id} naam={w.naam} />
                   <form action={arbeiderActiefWisselen} className="inline">
                     <input type="hidden" name="id" value={w.id} />
                     <input
@@ -57,29 +56,24 @@ export default async function WerknemersPagina() {
                     />
                     {w.actief ? (
                       <button className="text-xs font-medium text-slate-500 hover:text-red-600">
-                        Actief · zet inactief
+                        Zet inactief
                       </button>
                     ) : (
                       <button className="text-xs font-medium text-red-500 hover:text-merk">
-                        Inactief · heractiveer
+                        Heractiveer
                       </button>
                     )}
                   </form>
-                </td>
-              </tr>
-            ))}
-            {werknemers.length === 0 && (
-              <tr>
-                <td
-                  colSpan={4}
-                  className="px-4 py-6 text-center text-slate-400"
-                >
-                  Nog geen arbeiders. Voeg er hierboven een toe.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+                </div>
+              </div>
+            </li>
+          ))}
+          {werknemers.length === 0 && (
+            <li className="px-4 py-6 text-center text-slate-400">
+              Nog geen arbeiders. Voeg er hierboven een toe.
+            </li>
+          )}
+        </ul>
       </div>
 
       <p className="text-xs text-slate-400">

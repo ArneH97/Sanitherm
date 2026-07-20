@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { huidigeWerknemer } from "@/lib/werknemer";
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { ToevoegenResultaat } from "./types";
+import type { ToevoegenResultaat, ResetResultaat } from "./types";
 
 // Genereer een leesbaar tijdelijk wachtwoord (geen dubbelzinnige tekens zoals 0/O, 1/l).
 function genereerWachtwoord(lengte = 10): string {
@@ -33,7 +33,6 @@ export async function arbeiderToevoegen(
     .trim()
     .toLowerCase();
   const startdatum = String(formData.get("startdatum") ?? "").trim();
-  const uurloonRuw = String(formData.get("uurloon") ?? "").trim();
   let wachtwoord = String(formData.get("wachtwoord") ?? "").trim();
 
   if (!naam) return { ok: false, fout: "Vul een naam in." };
@@ -71,15 +70,12 @@ export async function arbeiderToevoegen(
       };
     }
 
-    // 2. Optionele extra profielvelden bijwerken (de trigger heeft de rij al aangemaakt).
-    const extra: { startdatum?: string; uurloon?: number } = {};
-    if (startdatum) extra.startdatum = startdatum;
-    if (uurloonRuw) {
-      const uurloon = Number(uurloonRuw.replace(",", "."));
-      if (!Number.isNaN(uurloon)) extra.uurloon = uurloon;
-    }
-    if (Object.keys(extra).length > 0) {
-      await admin.from("werknemers").update(extra).eq("id", data.user.id);
+    // 2. Optionele startdatum bijwerken (de trigger heeft de rij al aangemaakt).
+    if (startdatum) {
+      await admin
+        .from("werknemers")
+        .update({ startdatum })
+        .eq("id", data.user.id);
     }
   } catch (e) {
     // Bv. wanneer de service_role-sleutel niet is ingesteld op de server.
@@ -91,6 +87,39 @@ export async function arbeiderToevoegen(
   revalidatePath("/beheer");
 
   return { ok: true, naam, email, wachtwoord };
+}
+
+// Zaakvoerder stelt een nieuw tijdelijk wachtwoord in voor een arbeider.
+// Nodig wanneer het wachtwoord verloren is (het oorspronkelijke wordt maar
+// één keer getoond en kan nadien niet meer worden opgevraagd).
+export async function wachtwoordOpnieuw(
+  _vorige: ResetResultaat | null,
+  formData: FormData
+): Promise<ResetResultaat> {
+  const ik = await huidigeWerknemer();
+  if (!ik || ik.rol !== "zaakvoerder") {
+    return { ok: false, fout: "Geen toestemming." };
+  }
+
+  const id = String(formData.get("id") ?? "");
+  if (!id) return { ok: false, fout: "Onbekende werknemer." };
+
+  const wachtwoord = genereerWachtwoord();
+
+  try {
+    const admin = createAdminClient();
+    const { error } = await admin.auth.admin.updateUserById(id, {
+      password: wachtwoord,
+    });
+    if (error) {
+      return { ok: false, fout: "Mislukt: " + error.message };
+    }
+  } catch (e) {
+    const bericht = e instanceof Error ? e.message : "onbekende serverfout";
+    return { ok: false, fout: "Serverfout: " + bericht };
+  }
+
+  return { ok: true, wachtwoord };
 }
 
 // Arbeider (de)activeren. Een inactieve arbeider blijft in de historiek staan

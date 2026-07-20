@@ -30,3 +30,68 @@ export interface Tijdsregistratie {
   handmatig_aangepast: boolean;
   opmerking: string | null;
 }
+
+// Verlofsoorten. 'overuren' = recuperatie van opgebouwde overuren (inhaalrust).
+export type VerlofType =
+  | "wettelijk_verlof"
+  | "adv_inhaalrust"
+  | "overuren"
+  | "onbetaald"
+  | "klein_verlet"
+  | "ander";
+
+export type AanvraagStatus =
+  | "aangevraagd"
+  | "goedgekeurd"
+  | "geweigerd"
+  | "geannuleerd";
+
+export interface Verlofaanvraag {
+  id: string;
+  werknemer_id: string;
+  type: VerlofType;
+  van: string; // YYYY-MM-DD
+  tot: string; // YYYY-MM-DD
+  aantal_dagen: number;
+  reden: string | null;
+  status: AanvraagStatus;
+  reden_weigering: string | null;
+  aangevraagd_op: string;
+  beoordeeld_op: string | null;
+}
+
+export interface Verloftellers {
+  id: string;
+  werknemer_id: string;
+  jaar: number;
+  wettelijk_verlof_totaal: number;
+  wettelijk_verlof_opgenomen: number;
+  adv_totaal: number;
+  adv_opgenomen: number;
+}
+
+// Leesbare labels voor de verlofsoorten.
+export const VERLOF_LABELS: Record<VerlofType, string> = {
+  wettelijk_verlof: "Wettelijk verlof",
+  adv_inhaalrust: "ADV-inhaalrust",
+  overuren: "Overuren opnemen",
+  onbetaald: "Onbetaald verlof",
+  klein_verlet: "Klein verlet",
+  ander: "Ander",
+};
+
+// Soorten die een werknemer zelf kan kiezen bij een aanvraag.
+export const AANVRAAGBARE_VERLOF_TYPES: VerlofType[] = [
+  "wettelijk_verlof",
+  "adv_inhaalrust",
+  "overuren",
+  "onbetaald",
+  "klein_verlet",
+];
+
+export const STATUS_LABELS: Record<AanvraagStatus, string> = {
+  aangevraagd: "In behandeling",
+  goedgekeurd: "Goedgekeurd",
+  geweigerd: "Geweigerd",
+  geannuleerd: "Geannuleerd",
+};
