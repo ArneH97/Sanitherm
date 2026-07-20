@@ -1,8 +1,18 @@
 import { createClient } from "@/lib/supabase/server";
+import { attestSignedUrl } from "@/lib/attest";
 import { vandaagInBrussel, toonTijd, toonDatum } from "@/lib/uren";
 import type { Tijdsregistratie, Werknemer } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
+
+type ZiekRij = {
+  id: string;
+  van: string;
+  tot: string | null;
+  attest_pad: string | null;
+  gemeld_op: string;
+  werknemer: { naam: string } | null;
+};
 
 export default async function BeheerOverzicht() {
   const supabase = await createClient();
@@ -26,6 +36,23 @@ export default async function BeheerOverzicht() {
     .from("verlofaanvragen")
     .select("id", { count: "exact", head: true })
     .eq("status", "aangevraagd");
+
+  // Recente ziekmeldingen (laatste 60 dagen) met naam + attest.
+  const grens = new Date();
+  grens.setDate(grens.getDate() - 60);
+  const { data: zData } = await supabase
+    .from("ziektemeldingen")
+    .select("id, van, tot, attest_pad, gemeld_op, werknemer:werknemers(naam)")
+    .gte("gemeld_op", grens.toISOString())
+    .order("gemeld_op", { ascending: false })
+    .limit(15);
+  const ziekmeldingen = (zData as unknown as ZiekRij[]) ?? [];
+  const ziekMetUrl = await Promise.all(
+    ziekmeldingen.map(async (z) => ({
+      ziek: z,
+      url: await attestSignedUrl(z.attest_pad),
+    }))
+  );
 
   const regVoor = (id: string) =>
     regs.find((r) => r.werknemer_id === id) ?? null;
@@ -88,9 +115,54 @@ export default async function BeheerOverzicht() {
         </table>
       </div>
 
+      <div>
+        <h2 className="mb-2 text-base font-semibold text-slate-900">
+          Recente ziekmeldingen
+        </h2>
+        <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+          <ul className="divide-y divide-slate-100">
+            {ziekMetUrl.map(({ ziek: z, url }) => (
+              <li
+                key={z.id}
+                className="flex items-center justify-between gap-3 px-4 py-3"
+              >
+                <div className="min-w-0">
+                  <p className="font-medium text-slate-800">
+                    {z.werknemer?.naam ?? "Onbekend"}
+                  </p>
+                  <p className="text-sm text-slate-500">
+                    {toonDatum(z.van)}
+                    {z.tot ? ` – ${toonDatum(z.tot)}` : " (geen einddatum)"} ·
+                    gemeld {toonDatum(z.gemeld_op.slice(0, 10))}
+                  </p>
+                </div>
+                {url ? (
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="shrink-0 text-sm font-medium text-merk hover:underline"
+                  >
+                    Attest
+                  </a>
+                ) : (
+                  <span className="shrink-0 text-xs text-amber-600">
+                    geen attest
+                  </span>
+                )}
+              </li>
+            ))}
+            {ziekMetUrl.length === 0 && (
+              <li className="px-4 py-6 text-center text-slate-400">
+                Geen ziekmeldingen de afgelopen 60 dagen.
+              </li>
+            )}
+          </ul>
+        </div>
+      </div>
+
       <p className="text-xs text-slate-400">
-        Goedkeuringen, per-werknemer-instellingen en de pdf-export komen in de
-        volgende fase.
+        De pdf-export van de tijdsregistraties komt in een volgende stap.
       </p>
     </div>
   );

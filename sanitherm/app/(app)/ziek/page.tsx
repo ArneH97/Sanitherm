@@ -1,10 +1,86 @@
-import Binnenkort from "@/components/Binnenkort";
+import { createClient } from "@/lib/supabase/server";
+import { huidigeWerknemer } from "@/lib/werknemer";
+import { attestSignedUrl } from "@/lib/attest";
+import { toonDatum } from "@/lib/uren";
+import type { Ziektemelding } from "@/lib/types";
+import ZiekForm from "./ZiekForm";
 
-export default function ZiekPagina() {
+export const dynamic = "force-dynamic";
+
+export default async function ZiekPagina() {
+  const ik = await huidigeWerknemer();
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from("ziektemeldingen")
+    .select("*")
+    .eq("werknemer_id", ik!.id)
+    .order("gemeld_op", { ascending: false })
+    .limit(20);
+  const meldingen = (data as Ziektemelding[]) ?? [];
+
+  const metUrl = await Promise.all(
+    meldingen.map(async (m) => ({
+      melding: m,
+      url: await attestSignedUrl(m.attest_pad),
+    }))
+  );
+
   return (
-    <Binnenkort
-      titel="Ziek melden"
-      tekst="Je ziekteperiode ingeven en een doktersattest uploaden. Je werkgever wordt automatisch verwittigd."
-    />
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-xl font-bold text-slate-900">Ziek melden</h1>
+        <p className="text-sm text-slate-500">
+          Meld je ziekteperiode en laad je attest op.
+        </p>
+      </div>
+
+      <ZiekForm />
+
+      <div>
+        <h2 className="mb-2 text-base font-semibold text-slate-900">
+          Mijn ziekmeldingen
+        </h2>
+        <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+          <ul className="divide-y divide-slate-100">
+            {metUrl.map(({ melding: m, url }) => (
+              <li
+                key={m.id}
+                className="flex items-center justify-between gap-3 px-4 py-3"
+              >
+                <div className="min-w-0">
+                  <p className="font-medium text-slate-800">
+                    {toonDatum(m.van)}
+                    {m.tot ? ` – ${toonDatum(m.tot)}` : " (geen einddatum)"}
+                  </p>
+                  <p className="text-sm text-slate-500">
+                    Gemeld op {toonDatum(m.gemeld_op.slice(0, 10))}
+                  </p>
+                </div>
+                {url ? (
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="shrink-0 text-sm font-medium text-merk hover:underline"
+                  >
+                    Attest bekijken
+                  </a>
+                ) : (
+                  <span className="shrink-0 text-xs text-amber-600">
+                    geen attest
+                  </span>
+                )}
+              </li>
+            ))}
+            {metUrl.length === 0 && (
+              <li className="px-4 py-6 text-center text-slate-400">
+                Nog geen ziekmeldingen.
+              </li>
+            )}
+          </ul>
+        </div>
+      </div>
+    </div>
   );
 }

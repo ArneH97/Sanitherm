@@ -70,6 +70,16 @@ export interface Verloftellers {
   adv_opgenomen: number;
 }
 
+export interface Ziektemelding {
+  id: string;
+  werknemer_id: string;
+  van: string; // YYYY-MM-DD
+  tot: string | null;
+  attest_pad: string | null; // pad in Supabase Storage bucket 'attesten'
+  zaakvoerder_verwittigd: boolean;
+  gemeld_op: string;
+}
+
 // Leesbare labels voor de verlofsoorten.
 export const VERLOF_LABELS: Record<VerlofType, string> = {
   wettelijk_verlof: "Wettelijk verlof",
