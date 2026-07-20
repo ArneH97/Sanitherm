@@ -112,6 +112,32 @@ export function toonDatum(datum: string): string {
   });
 }
 
+// Begin- (maandag) en einddatum (zondag) van een ISO-week, als YYYY-MM-DD.
+// Omgekeerde van isoWeek(): handig om de dagen van een bevestigde week te vinden.
+export function isoWeekNaarDatums(
+  jaar: number,
+  week: number
+): { van: string; tot: string } {
+  // 4 januari zit per definitie altijd in ISO-week 1.
+  const vierde = new Date(Date.UTC(jaar, 0, 4));
+  const dag = vierde.getUTCDay() || 7; // maandag = 1 … zondag = 7
+  const week1Maandag = new Date(vierde);
+  week1Maandag.setUTCDate(vierde.getUTCDate() - (dag - 1));
+
+  const maandag = new Date(week1Maandag);
+  maandag.setUTCDate(week1Maandag.getUTCDate() + (week - 1) * 7);
+  const zondag = new Date(maandag);
+  zondag.setUTCDate(maandag.getUTCDate() + 6);
+
+  const fmt = (d: Date) =>
+    `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(
+      2,
+      "0"
+    )}-${String(d.getUTCDate()).padStart(2, "0")}`;
+
+  return { van: fmt(maandag), tot: fmt(zondag) };
+}
+
 // Ancienniteit als leesbare tekst, bv. "3 jaar, 2 maanden".
 export function ancienniteit(startdatum: string | null): string {
   if (!startdatum) return "onbekend";
