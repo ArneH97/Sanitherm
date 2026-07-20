@@ -4,6 +4,16 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Sanitherm — Personeelsportaal",
   description: "Tijdsregistratie, verlof en ziektemelding voor Sanitherm",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "Sanitherm",
+    statusBarStyle: "default",
+  },
+  icons: {
+    icon: "/icon-192.png",
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export const viewport: Viewport = {

@@ -12,6 +12,7 @@ import {
 } from "@/lib/uren";
 import type { Tijdsregistratie } from "@/lib/types";
 import { bevestigWeek } from "./actions";
+import MeldingenAanzetten from "@/components/MeldingenAanzetten";
 
 export const dynamic = "force-dynamic";
 
@@ -104,6 +105,8 @@ export default async function WeekPagina({
           )}
         </div>
       </div>
+
+      {offset === 0 && <MeldingenAanzetten />}
 
       <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
         <table className="w-full text-sm">

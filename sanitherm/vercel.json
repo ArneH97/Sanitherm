@@ -1,0 +1,6 @@
+{
+  "crons": [
+    { "path": "/api/cron/week-herinnering", "schedule": "0 16 * * *" },
+    { "path": "/api/cron/week-herinnering", "schedule": "0 17 * * *" }
+  ]
+}
