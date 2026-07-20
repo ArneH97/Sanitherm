@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { huidigeWerknemer } from "@/lib/werknemer";
+import AppNavigatie, { type NavLink } from "@/components/AppNavigatie";
 
 export default async function AppLayout({
   children,
@@ -12,52 +12,35 @@ export default async function AppLayout({
 
   const isBaas = werknemer.rol === "zaakvoerder";
 
-  const links = isBaas
+  const links: NavLink[] = isBaas
     ? [
-        { href: "/beheer", label: "Overzicht" },
-        { href: "/beheer/goedkeuringen", label: "Goedkeuringen" },
-        { href: "/beheer/werknemers", label: "Werknemers" },
+        { href: "/beheer", label: "Overzicht", kort: "Overzicht", icon: "overzicht" },
+        {
+          href: "/beheer/goedkeuringen",
+          label: "Goedkeuringen",
+          kort: "Keuren",
+          icon: "goedkeuringen",
+        },
+        {
+          href: "/beheer/werknemers",
+          label: "Werknemers",
+          kort: "Ploeg",
+          icon: "werknemers",
+        },
       ]
     : [
-        { href: "/vandaag", label: "Vandaag" },
-        { href: "/week", label: "Mijn week" },
-        { href: "/verlof", label: "Verlof" },
-        { href: "/ziek", label: "Ziek melden" },
+        { href: "/vandaag", label: "Vandaag", kort: "Vandaag", icon: "vandaag" },
+        { href: "/week", label: "Mijn week", kort: "Week", icon: "week" },
+        { href: "/verlof", label: "Verlof", kort: "Verlof", icon: "verlof" },
+        { href: "/ziek", label: "Ziek melden", kort: "Ziek", icon: "ziek" },
       ];
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
-          <span className="font-bold text-merk">Sanitherm</span>
-          <div className="flex items-center gap-3">
-            <span className="hidden text-sm text-slate-500 sm:inline">
-              {werknemer.naam}
-            </span>
-            <form action="/auth/signout" method="post">
-              <button className="text-sm text-slate-500 hover:text-slate-900">
-                Afmelden
-              </button>
-            </form>
-          </div>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-3xl px-4 pb-24 pt-6">{children}</main>
-
-      <nav className="fixed bottom-0 left-0 right-0 border-t border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-3xl">
-          {links.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              className="flex-1 py-3 text-center text-xs font-medium text-slate-600 hover:bg-merk-licht hover:text-merk"
-            >
-              {l.label}
-            </Link>
-          ))}
-        </div>
-      </nav>
+      <AppNavigatie links={links} naam={werknemer.naam} />
+      <main className="mx-auto max-w-3xl px-4 pb-28 pt-6 sm:pb-12">
+        {children}
+      </main>
     </div>
   );
 }
