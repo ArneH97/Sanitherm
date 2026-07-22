@@ -7,6 +7,7 @@ import { toonUren } from "@/lib/uren";
 import {
   AANVRAAGBARE_VERLOF_TYPES,
   VERLOF_LABELS,
+  VERLOF_HINTS,
   DAGDEEL_LABELS,
   type VerlofType,
   type Dagdeel,
@@ -72,6 +73,11 @@ export default function VerlofForm({
                 {toonUren(overurenBeschikbaar)}
               </span>{" "}
               (≈ {(overurenBeschikbaar / urenPerDag).toFixed(1)} dagen)
+            </span>
+          )}
+          {VERLOF_HINTS[type] && (
+            <span className="mt-1 block text-xs text-slate-500">
+              {VERLOF_HINTS[type]}
             </span>
           )}
         </label>

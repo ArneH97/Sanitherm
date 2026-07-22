@@ -86,6 +86,10 @@ export type VerlofType =
   | "wettelijk_verlof"
   | "adv_inhaalrust"
   | "overuren"
+  | "geboorteverlof"
+  | "rouwverlof"
+  | "huwelijk"
+  | "ouderschapsverlof"
   | "onbetaald"
   | "klein_verlet"
   | "ander";
@@ -156,9 +160,25 @@ export const VERLOF_LABELS: Record<VerlofType, string> = {
   wettelijk_verlof: "Wettelijk verlof",
   adv_inhaalrust: "ADV-inhaalrust",
   overuren: "Overuren opnemen",
+  geboorteverlof: "Geboorteverlof (vaderschap)",
+  rouwverlof: "Rouwverlof (overlijden)",
+  huwelijk: "Huwelijk",
+  ouderschapsverlof: "Ouderschapsverlof",
   onbetaald: "Onbetaald verlof",
-  klein_verlet: "Klein verlet",
+  klein_verlet: "Klein verlet (ander)",
   ander: "Ander",
+};
+
+// Korte toelichting bij bijzondere verlofsoorten (wettelijke richtlijnen).
+export const VERLOF_HINTS: Partial<Record<VerlofType, string>> = {
+  geboorteverlof:
+    "Wettelijk 20 dagen, op te nemen binnen 4 maanden na de geboorte.",
+  rouwverlof:
+    "Bv. 10 dagen bij partner of kind, 3 dagen bij (schoon)ouder — zie sociaal reglement.",
+  huwelijk: "2 dagen bij je eigen huwelijk, 1 dag bij huwelijk van naaste familie.",
+  klein_verlet:
+    "Aantal dagen hangt af van de gebeurtenis (communie, verhuis, …) — zie sociaal reglement.",
+  ouderschapsverlof: "Thematisch verlof — bespreek de regeling met Bart.",
 };
 
 // Soorten die een werknemer zelf kan kiezen bij een aanvraag.
@@ -166,8 +186,12 @@ export const AANVRAAGBARE_VERLOF_TYPES: VerlofType[] = [
   "wettelijk_verlof",
   "adv_inhaalrust",
   "overuren",
-  "onbetaald",
+  "geboorteverlof",
+  "rouwverlof",
+  "huwelijk",
+  "ouderschapsverlof",
   "klein_verlet",
+  "onbetaald",
 ];
 
 export const STATUS_LABELS: Record<AanvraagStatus, string> = {
