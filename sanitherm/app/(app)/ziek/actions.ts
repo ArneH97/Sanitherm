@@ -15,6 +15,36 @@ const TOEGELATEN_TYPES = [
 ];
 const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
 
+// Laad een attest-bestand op naar de private bucket. Geeft het pad terug,
+// of een foutmelding.
+async function ladAttestOp(
+  attest: File,
+  werknemerId: string
+): Promise<{ pad?: string; fout?: string }> {
+  if (!TOEGELATEN_TYPES.includes(attest.type)) {
+    return { fout: "Enkel een foto (jpg/png) of een pdf is toegelaten." };
+  }
+  if (attest.size > MAX_BYTES) {
+    return { fout: "Het bestand is te groot (max 10 MB)." };
+  }
+  const ext = attest.name.includes(".")
+    ? attest.name.split(".").pop()!.toLowerCase()
+    : "dat";
+  const pad = `${werknemerId}/${Date.now()}.${ext}`;
+  try {
+    const admin = createAdminClient();
+    const buffer = Buffer.from(await attest.arrayBuffer());
+    const { error } = await admin.storage
+      .from("attesten")
+      .upload(pad, buffer, { contentType: attest.type, upsert: false });
+    if (error) return { fout: "Attest opladen mislukt: " + error.message };
+    return { pad };
+  } catch (e) {
+    const bericht = e instanceof Error ? e.message : "onbekende serverfout";
+    return { fout: "Serverfout bij opladen: " + bericht };
+  }
+}
+
 export async function ziekMelden(
   _vorige: ZiekResultaat | null,
   formData: FormData
@@ -35,37 +65,13 @@ export async function ziekMelden(
     return { ok: false, fout: "De einddatum ligt voor de begindatum." };
   }
 
-  // Optioneel attest opladen naar de private bucket 'attesten'.
+  // Attest is optioneel — het mag later toegevoegd worden.
   let attestPad: string | null = null;
   const attest = formData.get("attest") as File | null;
   if (attest && attest.size > 0) {
-    if (!TOEGELATEN_TYPES.includes(attest.type)) {
-      return {
-        ok: false,
-        fout: "Enkel een foto (jpg/png) of een pdf is toegelaten.",
-      };
-    }
-    if (attest.size > MAX_BYTES) {
-      return { ok: false, fout: "Het bestand is te groot (max 10 MB)." };
-    }
-    const ext = attest.name.includes(".")
-      ? attest.name.split(".").pop()!.toLowerCase()
-      : "dat";
-    const pad = `${ik.id}/${Date.now()}.${ext}`;
-    try {
-      const admin = createAdminClient();
-      const buffer = Buffer.from(await attest.arrayBuffer());
-      const { error } = await admin.storage
-        .from("attesten")
-        .upload(pad, buffer, { contentType: attest.type, upsert: false });
-      if (error) {
-        return { ok: false, fout: "Attest opladen mislukt: " + error.message };
-      }
-      attestPad = pad;
-    } catch (e) {
-      const bericht = e instanceof Error ? e.message : "onbekende serverfout";
-      return { ok: false, fout: "Serverfout bij opladen: " + bericht };
-    }
+    const res = await ladAttestOp(attest, ik.id);
+    if (res.fout) return { ok: false, fout: res.fout };
+    attestPad = res.pad ?? null;
   }
 
   const supabase = await createClient();
@@ -81,5 +87,29 @@ export async function ziekMelden(
 
   revalidatePath("/ziek");
   revalidatePath("/beheer");
-  return { ok: true };
+  return { ok: true, heeftAttest: attestPad != null };
+}
+
+// Achteraf een attest toevoegen aan een bestaande ziekmelding.
+export async function attestToevoegen(formData: FormData) {
+  const ik = await huidigeWerknemer();
+  if (!ik) return;
+
+  const id = String(formData.get("id") ?? "");
+  const attest = formData.get("attest") as File | null;
+  if (!id || !attest || attest.size === 0) return;
+
+  const res = await ladAttestOp(attest, ik.id);
+  if (!res.pad) return;
+
+  const supabase = await createClient();
+  // RLS zorgt dat een werknemer enkel zijn eigen melding kan bijwerken.
+  await supabase
+    .from("ziektemeldingen")
+    .update({ attest_pad: res.pad, attest_herinnerd: true })
+    .eq("id", id)
+    .eq("werknemer_id", ik.id);
+
+  revalidatePath("/ziek");
+  revalidatePath("/beheer");
 }

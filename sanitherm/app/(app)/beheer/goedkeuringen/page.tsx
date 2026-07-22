@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { toonDatum, toonUren } from "@/lib/uren";
-import { VERLOF_LABELS, type Verlofaanvraag } from "@/lib/types";
+import { VERLOF_LABELS, DAGDEEL_LABELS, type Verlofaanvraag } from "@/lib/types";
 import { verlofBeslissen, weekBeslissen } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -72,9 +72,11 @@ export default async function GoedkeuringenPagina() {
                       {a.werknemer?.naam ?? "Onbekend"}
                     </p>
                     <p className="text-sm text-slate-500">
-                      {VERLOF_LABELS[a.type]} · {toonDatum(a.van)} –{" "}
-                      {toonDatum(a.tot)} · {a.aantal_dagen} dag
-                      {a.aantal_dagen === 1 ? "" : "en"}
+                      {VERLOF_LABELS[a.type]} ·{" "}
+                      {a.dagdeel !== "hele_dag"
+                        ? `${toonDatum(a.van)} · ${DAGDEEL_LABELS[a.dagdeel]}`
+                        : `${toonDatum(a.van)} – ${toonDatum(a.tot)}`}{" "}
+                      · {a.aantal_dagen} dag{a.aantal_dagen === 1 ? "" : "en"}
                     </p>
                     {a.reden && (
                       <p className="mt-1 text-sm text-slate-400">

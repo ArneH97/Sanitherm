@@ -12,7 +12,9 @@ export function berekenGewerkteUren(
   if (isNaN(start) || isNaN(eind) || eind <= start) return null;
   const bruto = (eind - start) / 1000 / 60; // minuten
   const netto = Math.max(0, bruto - pauzeMinuten);
-  return Math.round((netto / 60) * 100) / 100; // uren, 2 decimalen
+  const uren = netto / 60;
+  // Afronden per kwartier, altijd naar beneden (bv. 8u06 → 8u00, 8u20 → 8u15).
+  return Math.floor(uren / 0.25) * 0.25;
 }
 
 // ISO-weeknummer (maandag als eerste dag) en het bijhorende jaar.

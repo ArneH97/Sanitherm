@@ -12,7 +12,9 @@ export type IconNaam =
   | "goedkeuringen"
   | "werknemers"
   | "kalender"
-  | "export";
+  | "statistieken"
+  | "export"
+  | "kaart";
 
 export interface NavLink {
   href: string;
@@ -169,10 +171,22 @@ function Icon({ naam, className }: { naam: IconNaam; className?: string }) {
         <rect x="6.5" y="12.5" width="3" height="3" rx="0.5" />
       </>
     ),
+    statistieken: (
+      <>
+        <path d="M4 20V10M10 20V4M16 20v-7M4 20h16" />
+      </>
+    ),
     export: (
       <>
         <path d="M12 3v12M8 11l4 4 4-4" />
         <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+      </>
+    ),
+    kaart: (
+      <>
+        <rect x="3" y="5" width="18" height="14" rx="2" />
+        <circle cx="9" cy="11" r="2" />
+        <path d="M5.5 16.5c.7-1.4 2-2.2 3.5-2.2s2.8.8 3.5 2.2M15 9.5h4M15 13h3" />
       </>
     ),
   };

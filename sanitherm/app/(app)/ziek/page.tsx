@@ -4,6 +4,7 @@ import { attestSignedUrls } from "@/lib/attest";
 import { toonDatum } from "@/lib/uren";
 import type { Ziektemelding } from "@/lib/types";
 import ZiekForm from "./ZiekForm";
+import { attestToevoegen } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -40,32 +41,51 @@ export default async function ZiekPagina() {
         <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
           <ul className="divide-y divide-slate-100">
             {metUrl.map(({ melding: m, url }) => (
-              <li
-                key={m.id}
-                className="flex items-center justify-between gap-3 px-4 py-3"
-              >
-                <div className="min-w-0">
-                  <p className="font-medium text-slate-800">
-                    {toonDatum(m.van)}
-                    {m.tot ? ` – ${toonDatum(m.tot)}` : " (geen einddatum)"}
-                  </p>
-                  <p className="text-sm text-slate-500">
-                    Gemeld op {toonDatum(m.gemeld_op.slice(0, 10))}
-                  </p>
+              <li key={m.id} className="px-4 py-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-medium text-slate-800">
+                      {toonDatum(m.van)}
+                      {m.tot ? ` – ${toonDatum(m.tot)}` : " (geen einddatum)"}
+                    </p>
+                    <p className="text-sm text-slate-500">
+                      Gemeld op {toonDatum(m.gemeld_op.slice(0, 10))}
+                    </p>
+                  </div>
+                  {url && (
+                    <a
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="shrink-0 text-sm font-medium text-merk hover:underline"
+                    >
+                      Attest bekijken
+                    </a>
+                  )}
                 </div>
-                {url ? (
-                  <a
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="shrink-0 text-sm font-medium text-merk hover:underline"
+
+                {!url && (
+                  <form
+                    action={attestToevoegen}
+                    className="mt-2 rounded-lg bg-amber-50 p-3 ring-1 ring-amber-200"
                   >
-                    Attest bekijken
-                  </a>
-                ) : (
-                  <span className="shrink-0 text-xs text-amber-600">
-                    geen attest
-                  </span>
+                    <input type="hidden" name="id" value={m.id} />
+                    <p className="mb-2 text-xs font-medium text-amber-700">
+                      Nog geen attest — voeg het binnen de 24 uur toe:
+                    </p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <input
+                        name="attest"
+                        type="file"
+                        accept="image/*,application/pdf"
+                        required
+                        className="text-sm text-slate-600 file:mr-2 file:rounded-lg file:border-0 file:bg-white file:px-2 file:py-1 file:text-xs file:font-medium file:text-merk"
+                      />
+                      <button className="rounded-lg bg-merk px-3 py-1.5 text-sm font-medium text-white hover:bg-merk-donker">
+                        Attest toevoegen
+                      </button>
+                    </div>
+                  </form>
                 )}
               </li>
             ))}

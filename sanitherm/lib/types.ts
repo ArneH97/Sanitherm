@@ -37,6 +37,14 @@ export interface Werknemer {
   // Prijs per overuur (door de zaakvoerder ingesteld). Het gewone uurloon
   // wordt niet meer gebruikt.
   overuur_prijs: number | null;
+  // Contactgegevens (contactkaart).
+  voornaam: string | null;
+  achternaam: string | null;
+  adres: string | null;
+  geboortedatum: string | null;
+  gsm: string | null;
+  noodcontact_naam: string | null;
+  noodcontact_gsm: string | null;
   // Standaard weekschema: uren per dag (ma–zo).
   rooster_ma: number;
   rooster_di: number;
@@ -88,12 +96,21 @@ export type AanvraagStatus =
   | "geweigerd"
   | "geannuleerd";
 
+export type Dagdeel = "hele_dag" | "voormiddag" | "namiddag";
+
+export const DAGDEEL_LABELS: Record<Dagdeel, string> = {
+  hele_dag: "Hele dag",
+  voormiddag: "Voormiddag",
+  namiddag: "Namiddag",
+};
+
 export interface Verlofaanvraag {
   id: string;
   werknemer_id: string;
   type: VerlofType;
   van: string; // YYYY-MM-DD
   tot: string; // YYYY-MM-DD
+  dagdeel: Dagdeel;
   aantal_dagen: number;
   reden: string | null;
   status: AanvraagStatus;
@@ -130,6 +147,7 @@ export interface Ziektemelding {
   tot: string | null;
   attest_pad: string | null; // pad in Supabase Storage bucket 'attesten'
   zaakvoerder_verwittigd: boolean;
+  attest_herinnerd: boolean;
   gemeld_op: string;
 }
 

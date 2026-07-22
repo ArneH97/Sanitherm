@@ -2,12 +2,30 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { huidigeWerknemer } from "@/lib/werknemer";
+import { stuurPush, zaakvoerderIds } from "@/lib/push";
 import {
   berekenGewerkteUren,
   vandaagInBrussel,
   wandtijdNaarInstant,
 } from "@/lib/uren";
 import type { Tijdsregistratie, DagSoort } from "@/lib/types";
+
+// Stuur een korte melding naar de zaakvoerder(s), bv. "Arne is ingecheckt".
+async function meldAanZaakvoerder(maakBericht: (naam: string) => string) {
+  try {
+    const [ik, baas] = await Promise.all([huidigeWerknemer(), zaakvoerderIds()]);
+    if (!ik) return;
+    await stuurPush(baas, {
+      title: "Sanitherm",
+      body: maakBericht(ik.naam),
+      url: "/beheer",
+      tag: "aanwezigheid",
+    });
+  } catch {
+    // meldingen mogen het in-/uitchecken nooit blokkeren
+  }
+}
 
 const SOORTEN: readonly DagSoort[] = ["gewoon", "weekend", "bouwverlof"];
 function leesSoort(formData: FormData): DagSoort {
@@ -62,6 +80,7 @@ export async function inchecken(formData: FormData) {
       soort,
     });
   }
+  await meldAanZaakvoerder((naam) => `${naam} is ingecheckt`);
   revalidatePath("/vandaag");
   revalidatePath("/week");
 }
@@ -92,6 +111,7 @@ export async function uitchecken() {
     .from("tijdsregistraties")
     .update({ checkout: nu, gewerkte_uren: uren })
     .eq("id", bestaand.id);
+  await meldAanZaakvoerder((naam) => `${naam} is uitgecheckt`);
   revalidatePath("/vandaag");
   revalidatePath("/week");
 }

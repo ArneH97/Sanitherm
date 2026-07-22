@@ -5,7 +5,11 @@ import { createClient } from "@/lib/supabase/server";
 import { huidigeWerknemer } from "@/lib/werknemer";
 import { overurenSaldo } from "@/lib/verlof";
 import { werkdagenTussen, toonUren } from "@/lib/uren";
-import { AANVRAAGBARE_VERLOF_TYPES, type VerlofType } from "@/lib/types";
+import {
+  AANVRAAGBARE_VERLOF_TYPES,
+  type VerlofType,
+  type Dagdeel,
+} from "@/lib/types";
 import type { AanvraagResultaat } from "./types";
 
 export async function verlofAanvragen(
@@ -17,27 +21,40 @@ export async function verlofAanvragen(
 
   const type = String(formData.get("type") ?? "") as VerlofType;
   const van = String(formData.get("van") ?? "").trim();
-  const tot = String(formData.get("tot") ?? "").trim();
+  let tot = String(formData.get("tot") ?? "").trim();
   const reden = String(formData.get("reden") ?? "").trim();
+  const dagdeelRuw = String(formData.get("dagdeel") ?? "hele_dag");
+  const dagdeel: Dagdeel =
+    dagdeelRuw === "voormiddag" || dagdeelRuw === "namiddag"
+      ? dagdeelRuw
+      : "hele_dag";
 
   if (!AANVRAAGBARE_VERLOF_TYPES.includes(type)) {
     return { ok: false, fout: "Kies een geldige verlofsoort." };
   }
   const datumOk = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s);
-  if (!datumOk(van) || !datumOk(tot)) {
-    return { ok: false, fout: "Vul een geldige begin- en einddatum in." };
+  if (!datumOk(van)) {
+    return { ok: false, fout: "Vul een geldige begindatum in." };
+  }
+
+  // Een halve dag (voor-/namiddag) geldt voor één dag: einddatum = begindatum.
+  const halveDag = dagdeel !== "hele_dag";
+  if (halveDag) tot = van;
+  if (!datumOk(tot)) {
+    return { ok: false, fout: "Vul een geldige einddatum in." };
   }
   if (tot < van) {
     return { ok: false, fout: "De einddatum ligt voor de begindatum." };
   }
 
-  const dagen = werkdagenTussen(van, tot);
-  if (dagen <= 0) {
+  const werkdagen = werkdagenTussen(van, tot);
+  if (werkdagen <= 0) {
     return {
       ok: false,
       fout: "Er zitten geen werkdagen (ma–vr) in die periode.",
     };
   }
+  const dagen = halveDag ? 0.5 : werkdagen;
 
   // Bij het opnemen van overuren: controleer het beschikbare saldo.
   if (type === "overuren") {
@@ -59,6 +76,7 @@ export async function verlofAanvragen(
     type,
     van,
     tot,
+    dagdeel,
     aantal_dagen: dagen,
     reden: reden || null,
     status: "aangevraagd",

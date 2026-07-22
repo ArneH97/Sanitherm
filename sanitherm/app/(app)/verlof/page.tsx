@@ -5,6 +5,7 @@ import { vandaagInBrussel, toonDatum, toonUren } from "@/lib/uren";
 import {
   VERLOF_LABELS,
   STATUS_LABELS,
+  DAGDEEL_LABELS,
   type Verlofaanvraag,
   type Verloftellers,
   type AanvraagStatus,
@@ -118,8 +119,10 @@ export default async function VerlofPagina() {
                     {VERLOF_LABELS[a.type]}
                   </p>
                   <p className="text-sm text-slate-500">
-                    {toonDatum(a.van)} – {toonDatum(a.tot)} · {a.aantal_dagen}{" "}
-                    dag{a.aantal_dagen === 1 ? "" : "en"}
+                    {a.dagdeel !== "hele_dag"
+                      ? `${toonDatum(a.van)} · ${DAGDEEL_LABELS[a.dagdeel]}`
+                      : `${toonDatum(a.van)} – ${toonDatum(a.tot)}`}{" "}
+                    · {a.aantal_dagen} dag{a.aantal_dagen === 1 ? "" : "en"}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">

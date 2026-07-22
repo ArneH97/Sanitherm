@@ -30,6 +30,12 @@ export default async function AppLayout({
           icon: "kalender",
         },
         {
+          href: "/beheer/statistieken",
+          label: "Statistieken",
+          kort: "Cijfers",
+          icon: "statistieken",
+        },
+        {
           href: "/beheer/werknemers",
           label: "Werknemers",
           kort: "Ploeg",
@@ -47,6 +53,7 @@ export default async function AppLayout({
         { href: "/week", label: "Mijn week", kort: "Week", icon: "week" },
         { href: "/verlof", label: "Verlof", kort: "Verlof", icon: "verlof" },
         { href: "/ziek", label: "Ziek melden", kort: "Ziek", icon: "ziek" },
+        { href: "/kaart", label: "Mijn kaart", kort: "Kaart", icon: "kaart" },
       ];
 
   return (
